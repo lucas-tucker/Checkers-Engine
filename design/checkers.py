@@ -47,18 +47,18 @@ class Board:
         
         Returns:
             dictionary[tuple] -> dictionary
-                dictionary[coordinate] -> dictionary
         """
     
-    def _jump_recurse(piece)
+    def _jump_recurse(self, piece, dead_pieces)
         """
-        recursively finds the possible moves for a piece.
+        Recursively finds the possible moves for a piece. 
+        Keeps a list of dead pieces.
 
         Parameters:
             piece : tuple
 
         Returns: 
-            dictionary
+            dictionary[tuple] -> dictionary
         """
 
     def reg_moves(self, player):
@@ -70,7 +70,19 @@ class Board:
             player : int
         
         Returns:
-            dictionary
+            dictionary[tuple] -> dictionary
+        """
+
+    def update(self, player):
+        """
+        Updates the board state, i.e. the possible moves after a turn.
+        If there are no possible moves, the other player has won.
+
+        Parameters:
+            player : int
+
+        Returns:
+            None
         """
 
 class Piece:
