@@ -1,3 +1,12 @@
+"""
+Checkers game logic.
+
+Current Status : TODO execute_move true-random
+
+Author: Daniel Chen
+"""
+
+
 from enum import Enum
 from typing import Optional, List, Union
 import random
@@ -72,6 +81,16 @@ class Board:
         return s
     
     def valid_moves(self, piece_color):
+        """
+        Returns the set of possible moves for a certain player.
+        Calls jump_moves and reg_moves.
+
+        Args:
+            piece_color : Enum(PieceColor)
+        
+        Returns:
+            list[Move]
+        """
         jump_move_list, can_jump = self.jump_moves(piece_color)
         if can_jump:
             print("we should jump")
@@ -81,6 +100,16 @@ class Board:
             return reg_move_list
 
     def jump_moves(self, piece_color):
+        """
+        Returns the jumping-moves of a particular color, and whether
+        any of them are jumping moves.
+
+        Args:
+            piece_color : Enum(PieceColor)
+        
+        Returns:
+            list[Move], bool
+        """
         move_list = []
         can_jump = False
         for row in self._board:
@@ -93,6 +122,15 @@ class Board:
         return move_list, can_jump
 
     def _jump_moves_piece(self, square):
+        """
+        Private method
+
+        Args:
+            square : Square (start of the move tree)
+
+        Returns:
+            Move, bool
+        """
         jump_moves = Moves(square, set())
         self._jump_recurse(square, square.piece.color, jump_moves, square.piece, square)
         can_jump = False
@@ -104,6 +142,19 @@ class Board:
 
     
     def _jump_recurse(self, square, piece_color, move, first_piece, first_square):
+        """
+        Private method
+
+        Args: 
+            square : Square (square currently on)
+            piece_color : Enum(PieceColor) (to remember which color we can jump over)
+            move : Move (we build off this tree)
+            first_piece : Piece (actually not sure why we need this)
+            first_square : Square (we could revisit this square, so we need to treat as if it's empty)
+
+        Returns:
+            None
+        """
         opposite: Optional[PieceColor]
         if piece_color.value == PieceColor.RED.value:
             opposite = PieceColor.BLACK
@@ -152,6 +203,9 @@ class Board:
 
     def _reg_moves_piece(self, square):
         """
+        Args:
+            square : Square (square we want to check the possible moves of)
+
         Returns:
             Moves
         """
@@ -169,6 +223,15 @@ class Board:
         return moves
     
     def execute_move(self, move):
+        """ 
+        Executes a move given a move tree. 
+        Turns a piece into a king if it is at the end of the board.
+
+        Args:
+            move : Move (tree of moves)
+        
+        Returns: None
+        """
         #test method - just execute the first move of the tree - will
         #update later to have true-random
         if move.can_execute():
@@ -177,18 +240,13 @@ class Board:
                 moving_piece = cur_move.location.piece
                 cur_move.location.piece = None
                 cur_move.children[0].location.piece = moving_piece
-                '''
-                for dead_square in cur_move.dead_squares:
-                    dead_square.piece = None
-                    print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
-                '''
                 cur_move = cur_move.children[0]
             if cur_move.dead_squares:
                 for dead_square in cur_move.dead_squares:
                     dead_square.piece = None
                     print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
             
-            #check if we are kinking
+            #check if we are kinging
             if cur_move.location.row == 0:
                 if moving_piece.color.value == PieceColor.RED.value:
                     moving_piece.is_king = True
@@ -199,8 +257,12 @@ class Board:
             pass
     
     def make_random_move(self, piece_color):
+        """ Makes a random valid move given a piece's color."""
         move_list = self.valid_moves(piece_color)
         random.shuffle(move_list)
+        if len(move_list) == 0:
+            print("WIN")
+            exit()
         i = 0
         while not move_list[i].can_execute():
             i += 1
@@ -258,15 +320,14 @@ class Piece:
     def __init__(self, piece_color, is_king=False):
         """
         Parameters:
+            piece_color : Enum(PieceColor)
             is_King : boolean
-            posX : int
-            posY : int
-            piece_dir : int (either 1 for player 1, -1 for player 2)
         """
         self.is_king = is_king
         self.color = piece_color
 
     def move_directions(self):
+        """ Returns a list of the possible directions a piece could move."""
         if self.is_king:
             return ["NW", "NE", "SE", "SW"]
         if self.color.value == PieceColor.BLACK.value:
@@ -299,6 +360,7 @@ class Moves:
             self.children.append(Moves(square, new_dead_set))
     
     def __str__(self):
+        """ Returns string representation, DFS-like. """
         s = "[" + str(self.location.row) + "," + str(self.location.col)+ "]"
         for move in self.children:
             s += str(move)
@@ -358,13 +420,15 @@ print(b)
 print(b._board[2][5].neighbors)
 """
 
-b = Board(3)
+board_size = 20
+
+b = Board(board_size)
 print("START")
 print(b)
 BLACK = b._board[0][1].piece.color
-RED = b._board[7][0].piece.color
+RED = b._board[2*board_size+1][0].piece.color
 
-for i in range(15):
+for i in range(100):
     print("RED MOVE")
     b.make_random_move(RED)
     print(b)
