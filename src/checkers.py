@@ -173,7 +173,14 @@ class Board:
                 for dead_square in cur_move.dead_squares:
                     dead_square.piece = None
                     print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
-            #if cur_move.location == 0 or 
+            
+            #check if we are kinking
+            if cur_move.location.row == 0:
+                if moving_piece.color.value == PieceColor.RED.value:
+                    moving_piece.is_king = True
+            if cur_move.location.row == self._board_dim -1:
+                if moving_piece.color.value == PieceColor.BLACK.value:
+                    moving_piece.is_king = True
         else:
             pass
 
@@ -293,11 +300,13 @@ print(m3)
 b.execute_move(m3)
 print(b)
 
-m4, a = b._jump_moves_piece(b._board[0][1])
+b._board[0][1].piece = None
+print(b)
+
+m4 = b._reg_moves_piece(b._board[1][2])
 b.execute_move(m4)
 print(b)
 
-m5, a = b._jump_moves_piece(b._board[7][0])
-print(m5)
+m5 = b._reg_moves_piece(b._board[0][1])
 b.execute_move(m5)
 print(b)
