@@ -3,6 +3,10 @@ from typing import Optional, List, Union
 
 PieceColor = Enum("PieceColor", ["RED", "BLACK"])
 
+opposite_color = {}
+opposite_color[PieceColor.RED] = PieceColor.BLACK
+opposite_color[PieceColor.BLACK] = PieceColor.RED
+
 class Board:
     _board: List[List[Optional[PieceColor]]]
     _board_dim: int
@@ -41,7 +45,7 @@ class Board:
  
         for row in self._board:
             for square in row:
-                if square.has_piece():
+                if (square.row + square.col) % 2 == 1:
                     for dir in dirs:
                         dr, dc = dirs[dir]
                         cur_row = square.row
@@ -67,10 +71,54 @@ class Board:
         return s
     
     def valid_moves(self, piece_color):
-        pass
+        jump_move_list, can_jump = self.jump_moves(piece_color)
+        if can_jump:
+            return jump_move_list
+        #no valid jump moves
+        reg_move_list = self.reg_moves(piece_color)
+        return reg_move_list
 
     def jump_moves(self, piece_color):
-        pass
+        move_list = []
+        for row in self._board:
+            for square in row:
+                if square.has_color(piece_color):
+                    move, can_jump = self._jump_moves_piece(square)
+                    move_list.append(move)
+        
+        return move_list, can_jump
+
+    def _jump_moves_piece(self, square):
+        jump_moves = Moves(square, set())
+        self._jump_recurse(square, square.piece.color, jump_moves, square.piece)
+        can_jump = False
+        if jump_moves.can_execute():
+            can_jump = True
+        return jump_moves, can_jump
+
+
+
+    
+    def _jump_recurse(self, square, piece_color, move, first_piece):
+        opposite: Optional[PieceColor]
+        if piece_color.value == PieceColor.RED.value:
+            opposite = PieceColor.BLACK
+        else:
+            opposite = PieceColor.RED
+
+        for dir in first_piece.move_directions():
+            if square.neighbors[dir] is not None: #neighbor exists
+                if square.neighbors[dir].has_piece(): #neighbor has piece
+                    if square.neighbors[dir].piece.color.value == opposite.value: #neighbor piece is opposite color
+                        if square.neighbors[dir] not in move.dead_squares:
+                            #we haven't visited this square
+                            if square.neighbors[dir].neighbors[dir] is not None: #two neighbors down exists
+                                if square.neighbors[dir].neighbors[dir].is_empty(): #two neighbors down is empty
+                                    last_index = len(move.children)
+                                    move.add_move(square.neighbors[dir].neighbors[dir], square.neighbors[dir])
+                                    self._jump_recurse(square.neighbors[dir].neighbors[dir], piece_color, move.children[last_index], first_piece)
+
+
 
     def reg_moves(self, piece_color):
         """
@@ -86,12 +134,12 @@ class Board:
         for row in self._board:
             for square in row:
                 if square.has_color(piece_color):
-                    move_list.append(self.reg_moves_piece(square))
+                    move_list.append(self._reg_moves_piece(square))
         
         return move_list
 
 
-    def reg_moves_piece(self, square):
+    def _reg_moves_piece(self, square):
         """
         Returns:
             Moves
@@ -105,11 +153,29 @@ class Board:
             '''
             if square.neighbors[dir] is not None: #check to see if adjacent exists
                 if square.neighbors[dir].is_empty(): #if the neighboring square is empty
-                    print("a")
                     moves.add_move(square.neighbors[dir], None)
         
         return moves
-
+    
+    def execute_move(self, move):
+        #test method - just execute the first move of the tree
+        if move.can_execute():
+            cur_move = move
+            while bool(cur_move.children):
+                moving_piece = cur_move.location.piece
+                cur_move.location.piece = None
+                cur_move.children[0].location.piece = moving_piece
+                for dead_square in cur_move.dead_squares:
+                    dead_square.piece = None
+                    print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
+                cur_move = cur_move.children[0]
+            if cur_move.dead_squares:
+                for dead_square in cur_move.dead_squares:
+                    dead_square.piece = None
+                    print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
+            #if cur_move.location == 0 or 
+        else:
+            pass
 
 class Square:
     """
@@ -133,7 +199,9 @@ class Square:
         """ Returns a string representation of what is on the square."""
         if self.piece == None:
             return "□"
-        return self.piece.color.name[0]
+        if self.piece.is_king:
+            return self.piece.color.name[0]
+        return self.piece.color.name[0].lower()
     
     def has_piece(self):
         """ Checks if piece exists on the square."""
@@ -192,12 +260,44 @@ class Moves:
             new_dead = Square (just jumped over)
         """
         if new_dead is None:
-            self.children.append(Moves(square, self.dead_squares))
+            self.children.append(Moves(square, self.dead_squares.copy()))
         else:
-            self.children.append(Moves(square, self.dead_squares.add(new_dead)))
+            new_dead_set = self.dead_squares.copy()
+            new_dead_set.add(new_dead)
+            self.children.append(Moves(square, new_dead_set))
     
     def __str__(self):
         s = "[" + str(self.location.row) + "," + str(self.location.col)+ "]"
         for move in self.children:
             s += str(move)
         return s
+    
+    def can_execute(self):
+        return bool(self.children) #shortcut to say  
+
+b = Board(3)
+print(b)
+m = b._reg_moves_piece(b._board[2][1])
+b.execute_move(m)
+print(b)
+m2 = b._reg_moves_piece(b._board[3][2])
+b.execute_move(m2)
+print(b)
+b._board[1][2].piece = None
+print(b)
+
+#k = b.valid_moves(PieceColor.RED)
+
+m3, a = b._jump_moves_piece(b._board[5][2])
+print(m3)
+b.execute_move(m3)
+print(b)
+
+m4, a = b._jump_moves_piece(b._board[0][1])
+b.execute_move(m4)
+print(b)
+
+m5, a = b._jump_moves_piece(b._board[7][0])
+print(m5)
+b.execute_move(m5)
+print(b)
