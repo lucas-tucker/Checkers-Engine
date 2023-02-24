@@ -34,6 +34,12 @@ multi-jump move, this may happen multiple times.
 If at any time the location input is not valid, the TUI will prompt
 again for a correct move.
 
+If for any reason one needs to exit the game, inputting ``exit`` will accomplish
+this.
+
+Once the game finishes, one can reset the board by inputting
+    b = Board(<size>) # replace size with an integer between 1 and 11
+
 Canonically, Black (displayed blue because dark terminals are popular)
 plays first: see 
 [American Checkers](https://en.wikipedia.org/wiki/Checkers#No_flying_kings;_men_cannot_capture_backwards). 
