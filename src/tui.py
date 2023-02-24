@@ -1,32 +1,40 @@
 """
 Checkers game Terminal User Interface.
 
+File Note: Due to the fact that some terminal interfaces are gray and black,
+    instead of using black and red piece colors, I show the pieces as blue and
+    red.
+
 Current Status : Awaiting bot development to then implement into TUI.
 
 Done By : Niko
 """
 from typing import Union, Dict
+import time
 
 from checkers import Board, Square, Piece, Moves, PieceColor
 from rich.console import Console
 from enum import Enum
 
-#PieceColor = Enum("PieceColor", ["RED", "BLACK"])
+# Initialize console (for typesetting) and useful global variables.
 console = Console()
-
-ALP_INT = {'a' : 0, 'b' : 1, 'c' : 2, 'd' : 3, 'e' : 4, 'f' : 5, 'g' : 6, 'h' : 7,
-            'i' : 8, 'j' : 9, 'k' : 10, 'l' : 11, 'm' : 12, 'n' : 13, 'o' : 14,
-            'p' : 15, 'q' : 16, 'r' : 17, 's' : 18, 't' : 19, 'u' : 20, 'v' : 21,
-            'w' : 22, 'x' : 23, 'y' : 24, 'z' : 25}
 alph = "abcdefghijklmnopqrstuvwxyz"
+count = 0
+# ALP_INT will take in a character in the alphabet, and return an integer
+ALP_INT = {}
+for char in alph:
+    ALP_INT[char] = count
+    count += 1
+# INT_ALP will take in an integer (0-25) and return the cooresponding letter
 INT_ALP = {}
 for numb in range(0,26):
     INT_ALP[numb] = alph[numb]
 
-
-name: str
-board: Board
-color: PieceColor
+class ExitError(Exception):
+    """
+    Custom ExitError class made for exiting piece selection or move selection.
+    """
+    pass
 
 def select_piece(board, color):
     """
@@ -37,30 +45,57 @@ def select_piece(board, color):
     if False: #self.bot is not None:
         pass
     else:
+        num_input_error = 0
         while True:
-            v = input(f"{color.value}'s Turn> ")
-            out = v.split('|')
+            if num_input_error >= 5:
+                # If a player gives a wrong input 5 times, we give them a way
+                # to exit from the game.
+                console.print("[bold yellow]Hint:[/bold yellow] If stuck," 
+                    " typing [magenta]<exit>[/magenta] will exit you from the game.")
+            col = ""
+            if color.name == "BLACK":
+                col = "Blue"
+            else:
+                col = "Red"
+            v = input(f"{col}'s Turn> ")
             try:
+                if v == "exit":
+                    # If player types exit, raise an error to end the game.
+                    raise ExitError
+                out = v.split('|')
                 col = ALP_INT[out[0]]
                 row = int(out[1])
-                if color != board._board[row][col].piece.color:
-                    console.print("[bold red]ERROR:[/bold red] Piece is not \
-                        the correct color. Please try again.")
                 pos = board._board[row][col]
-                # Check if input is actually a valid move
+                if color != board._board[row][col].piece.color:
+                    # If we reach here input was wrong color.
+                    console.print("[bold red]ERROR:[/bold red] Piece is not "
+                        "the correct color. Please try again.")
+                    num_input_error += 1
                 if not pos.has_piece:
-                    console.print("[bold red]ERROR:[/bold red] location \
-                        does not have piece, please try again")
+                    # If we reach here, input is not a piece.
+                    console.print("[bold red]ERROR:[/bold red] location"
+                        "does not have piece, please try again")
+                    num_input_error += 1
                     continue
                 moves = board.piece_valid_moves((col, row), color)
                 if moves[2].can_execute():
+                    # If we reach here a valid move was inputted.
                     return [moves, color]
                 else:
-                    console.print("[bold red]ERROR:[/bold red] location \
-                        does not have any valid moves, please try again")
+                    # If we reach here, the input has no valid moves.
+                    console.print("[bold red]ERROR:[/bold red] Location "
+                        "does not have any valid moves, please try again")
+                    if num_input_error >= 2:
+                        console.print("[bold i yellow]Hint: Check for jump "
+                            "moves! [/bold i yellow]")
+                    num_input_error += 1
                     continue
             except:
+                if v == "exit":
+                    raise ExitError
+                # If we reach here, there was some error with the input.
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
+                num_input_error += 1
     
 def do_move(moves, color, board):
     """
@@ -78,33 +113,59 @@ def do_move(moves, color, board):
         pass
     else:
         while moves[2].can_execute():
-            poss_coords = []
-            for move in moves[2].children:
-                poss_coords.append((INT_ALP[move.location.col], move.location.row))
-            #poss_coords = [(move[0], move[1]) for move in moves]
-            console.print("[bold blue]Possible Continuations: \
-            [/bold blue]" + "[bold white]" +f"{poss_coords}[/bold white] ")
-            v = input(f"{color.value}'s Turn> ")
-            out = v.split('|')
+            # The move is not finished until the move class instance (moves[2])
+            # has no more children. can_execute is a method which checks this.
 
-            col = ALP_INT[out[0]]
-            row = int(out[1])
-            pos = board._board[row][col]
-            valid = False
-            move_index = 0
-            for move in moves[2].children:
-                print(move.location.col, move.location.row)
-                if col == move.location.col and row == move.location.row:
-                    nxt = moves[2].children[move_index]
-                    board.execute_single_move(moves[2], move_index)
-                    moves = (nxt.location.col, nxt.location.row, nxt)
-                    print_board(board)
-                    valid = True
-                    continue
-                move_index += 1
-            if not valid:
-                console.print("[bold red]ERROR:[/bold red] Did not \
-                    enter a valid move. Please try again.")
+            # First we show the player their possible moves for the selected
+            # piece, or if they are halfway through a jump move, their possible
+            # continuations.
+            poss = [(INT_ALP[m.location.col], m.location.row) for m in moves[2].children]
+            console.print("[bold blue]Possible Continuations: \
+                [/bold blue]" + "[bold white]" +f"{poss}[/bold white] ")
+
+            # Next we get the player's input, and check if they tried to exit.
+            col = ""
+            if color.name == "BLACK":
+                col = "Blue"
+            else:
+                col = "Red"
+            v = input(f"{col}'s Turn> ")            
+
+            try:
+                if v == "exit":
+                    # If input was "exit", raise ExitError
+                    raise ExitError
+
+                out = v.split('|')
+                col = ALP_INT[out[0]]
+                row = int(out[1])
+                #pos = board._board[row][col]
+                valid = False
+                move_index = 0
+
+                for move in moves[2].children:
+                    if col == move.location.col and row == move.location.row:
+                        # If the input has a valid row and column, execute move.
+                        board.execute_single_move(moves[2], move_index)
+
+                        # Now we change moves to the subtree.
+                        nxt = moves[2].children[move_index]
+
+                        moves = (nxt.location.col, nxt.location.row, nxt)
+                        print_board(board)
+                        valid = True
+                        continue
+                    move_index += 1
+                if not valid:
+                    console.print("[bold red]ERROR:[/bold red] Did not "
+                        "enter a valid move. Please try again.")
+            except:
+                if v == "exit":
+                    # If input was "exit", raise ExitError
+                    raise ExitError
+                # If we reach here, there was some error with the input.
+                console.print("[bold red]ERROR:[/bold red] Please try again.")
+                num_imput_error += 1
 
 def print_board(board: Board) -> None:
     """ 
@@ -178,9 +239,60 @@ def print_board(board: Board) -> None:
             bottom.append(" [bold cyan]" + alph[num - 4] + "[/bold cyan] ")
     # Finally we combine the two strings and print
     console.print(final_s + ''.join(bottom))
-    console.print("Input format: [bold yellow]<x-coord>[/bold yellow] \
-        [bold red]|[/bold red] [bold yellow]<y-coord>[/bold yellow]")
+    console.print("Input format: [bold yellow]<x-coord>[/bold yellow] " 
+        "[bold red]|[/bold red] [bold yellow]<y-coord>[/bold yellow]")
     return None
+    
+def start_message(color, game_over=False):
+    """
+    Produces a start message saying which color goes first.
+
+    Args:
+        PieceColor: Starting Color
+    Returns:
+        console.print: Text output for who starts
+    """
+    col_str = ""
+    if color.value == PieceColor.BLACK.value:
+        if game_over:
+            msg_str = "The winner is [bold blue]Blue![/bold blue]"
+            top = "┌───────────────────┐\n"
+            rw2 = "│                   │\n"
+            rw3 = "│                   │\n"
+            rw4 = f"│{msg_str}│\n"
+            rw5 = "│                   │\n"
+            rw6 = "│                   │\n"
+            btm = "└───────────────────┘\n"
+        else:
+            col_str = "[bold blue]Blue[/bold blue]"
+            top = "┌─────────────────┐\n"
+            rw2 = "│                 │\n"
+            rw3 = "│                 │\n"
+            rw4 = f"│   {col_str} Starts   │\n"
+            rw5 = "│                 │\n"
+            rw6 = "│                 │\n"
+            btm = "└─────────────────┘\n"
+    else:
+        if game_over:
+            msg_str = "The winner is [bold red]Red![/bold red]"
+            top = "┌──────────────────┐\n"
+            rw2 = "│                  │\n"
+            rw3 = "│                  │\n"
+            rw4 = f"│{msg_str}│\n"
+            rw5 = "│                  │\n"
+            rw6 = "│                  │\n"
+            btm = "└──────────────────┘\n"
+        else:    
+            col_str = "[bold red]Red[/bold red]"
+            top = "┌────────────────┐\n"
+            rw2 = "│                │\n"
+            rw3 = "│                │\n"
+            rw4 = f"│   {col_str} Starts   │\n"
+            rw5 = "│                │\n"
+            rw6 = "│                │\n"
+            btm = "└────────────────┘\n"
+    
+    console.print(top + rw2 + rw3 + rw4 + rw5 + rw6 + btm)
     
 
 def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> None:
@@ -191,8 +303,13 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
             TUIPlayer objects.
     Returns: None
     """
+    # Save the starting board state to restart at the end of game.
+    start_board = Board(board._size)
+
     # The starting player is BLACK
     current = PieceColor.BLACK
+    start_message(current)
+    time.sleep(1)
 
     # Keep playing until there is a winner:
     while not board.is_done(current):
@@ -217,9 +334,22 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
     print_board(board)
 
     # Find winner and print winner or tie
+    print()
+    print()
+
     if current == PieceColor.BLACK:
-        console.print("[bold]The winner is[/bold] [bold red]red![/bold red]")
+        start_message(PieceColor.RED, game_over=True)
     elif current == PieceColor.RED:
-        console.print("[bold]The winner is[/bold] [bold blue]blue![/bold blue]")
+        start_message(PieceColor.BLACK, game_over=True)
     else:
         console.print(":pile_of_poo:")
+    
+    # Reset board
+    print()
+    print()
+    console.print("[bold i yellow]Remember to reset the board![/bold i yellow]")
+
+
+console = Console()
+b = Board(3)
+play_checkers(b)

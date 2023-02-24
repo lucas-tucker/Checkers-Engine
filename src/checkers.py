@@ -93,7 +93,7 @@ class Board:
         """
         jump_move_list, can_jump = self.jump_moves(piece_color)
         if can_jump:
-            print("we should jump")
+            # print("we should jump")
             return jump_move_list
         else: #no valid jump moves
             reg_move_list = self.reg_moves(piece_color)
@@ -204,7 +204,7 @@ class Board:
                                     #we cannot return to it
                                     last_index = len(move.children)
                                     move.add_move(square.neighbors[dir].neighbors[dir], square.neighbors[dir])
-                                    print(move)
+                                    #print(move)
                                     self._jump_recurse(square.neighbors[dir].neighbors[dir], piece_color, move.children[last_index], first_piece, first_square)
 
 
