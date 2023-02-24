@@ -301,15 +301,15 @@ class Board:
         moving_piece = move.location.piece
         move.children[child].location.piece = moving_piece
         move.location.piece = None
-        if move.dead_squares:
-            for dead_square in move.dead_squares:
+        if move.children[child].dead_squares:
+            for dead_square in move.children[child].dead_squares:
                 dead_square.piece = None
                 #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
         
-        if move.location.row == 0:
+        if move.children[child].location.row == 0:
             if moving_piece.color.value == PieceColor.RED.value:
                 moving_piece.is_king = True
-        if move.location.row == self._board_dim -1:
+        if move.children[child].location.row == self._board_dim -1:
             if moving_piece.color.value == PieceColor.BLACK.value:
                 moving_piece.is_king = True
     
