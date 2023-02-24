@@ -4,6 +4,7 @@ This respository contains a design and implementation for big checkers
 (a general implementation of [Checkers](https://en.wikipedia.org/wiki/Checkers)).
 This project is for CMSC 14200.
 
+The responsibility split is Daniel - Game Logic, Niko - TUI, Althea - GUI, Lucas - Bot
 # Setup
 
 Our implementation uses the following libraries that may need installing:
