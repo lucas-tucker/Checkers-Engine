@@ -18,6 +18,11 @@ ALP_INT = {'a' : 0, 'b' : 1, 'c' : 2, 'd' : 3, 'e' : 4, 'f' : 5, 'g' : 6, 'h' : 
             'i' : 8, 'j' : 9, 'k' : 10, 'l' : 11, 'm' : 12, 'n' : 13, 'o' : 14,
             'p' : 15, 'q' : 16, 'r' : 17, 's' : 18, 't' : 19, 'u' : 20, 'v' : 21,
             'w' : 22, 'x' : 23, 'y' : 24, 'z' : 25}
+alph = "abcdefghijklmnopqrstuvwxyz"
+INT_ALP = {}
+for numb in range(0,26):
+    INT_ALP[numb] = alph[numb]
+
 
 name: str
 board: Board
@@ -75,10 +80,10 @@ def do_move(moves, color, board):
         while moves[2].can_execute():
             poss_coords = []
             for move in moves[2].children:
-                poss_coords.append((move.location.col, move.location.row))
+                poss_coords.append((INT_ALP[move.location.col], move.location.row))
             #poss_coords = [(move[0], move[1]) for move in moves]
             console.print("[bold blue]Possible Continuations: \
-            [/bold blue]" + f"{poss_coords}> ")
+            [/bold blue]" + "[bold white]" +f"{poss_coords}[/bold white] ")
             v = input(f"{color.value}'s Turn> ")
             out = v.split('|')
 
