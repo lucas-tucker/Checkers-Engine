@@ -1,7 +1,7 @@
 """
 Checkers game Terminal User Interface.
 
-Current Status : Currently need to implement get_move functionality.
+Current Status : Awaiting bot development to then implement into TUI.
 
 Done By : Niko
 """
