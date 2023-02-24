@@ -1,7 +1,7 @@
 """
 Checkers game Terminal User Interface.
 
-Current Status : Currently need to implement get_move functionality.
+Current Status : Awaiting bot development to then implement into TUI.
 
 Done By : Niko
 """
@@ -14,173 +14,97 @@ from enum import Enum
 #PieceColor = Enum("PieceColor", ["RED", "BLACK"])
 console = Console()
 
-ALP_INT = {'a' : 1, 'b' : 2, 'c' : 3, 'd' : 4, 'e' : 5, 'f' : 6, 'g' : 7, 'h' : 8,
-            'i' : 9, 'j' : 10, 'k' : 11, 'l' : 12, 'm' : 13, 'n' : 14, 'o' : 15,
-            'p' : 16, 'q' : 17, 'r' : 18, 's' : 19, 't' : 20, 'u' : 21, 'v' : 22,
-            'w' : 23, 'x' : 24, 'y' : 25, 'z' : 26}
+ALP_INT = {'a' : 0, 'b' : 1, 'c' : 2, 'd' : 3, 'e' : 4, 'f' : 5, 'g' : 6, 'h' : 7,
+            'i' : 8, 'j' : 9, 'k' : 10, 'l' : 11, 'm' : 12, 'n' : 13, 'o' : 14,
+            'p' : 15, 'q' : 16, 'r' : 17, 's' : 18, 't' : 19, 'u' : 20, 'v' : 21,
+            'w' : 22, 'x' : 23, 'y' : 24, 'z' : 25}
+alph = "abcdefghijklmnopqrstuvwxyz"
+INT_ALP = {}
+for numb in range(0,26):
+    INT_ALP[numb] = alph[numb]
+
 
 name: str
 board: Board
 color: PieceColor
 
-class TUIPlayer:
+def select_piece(board, color):
     """
-    terminal goes crazy
+    At the start of a players move they must select a piece to then move.
+
+    Returns : list [possible moves for selected piece, piece color]
     """
-    def __init__(self, n: int, player_type: str, board: Board, color: PieceColor):
-        """
-        Constructor
+    if False: #self.bot is not None:
+        pass
+    else:
+        while True:
+            v = input(f"{color.value}'s Turn> ")
+            out = v.split('|')
+            try:
+                col = ALP_INT[out[0]]
+                row = int(out[1])
+                if color != board._board[row][col].piece.color:
+                    console.print("[bold red]ERROR:[/bold red] Piece is not \
+                        the correct color. Please try again.")
+                pos = board._board[row][col]
+                # Check if input is actually a valid move
+                if not pos.has_piece:
+                    console.print("[bold red]ERROR:[/bold red] location \
+                        does not have piece, please try again")
+                    continue
+                moves = board.piece_valid_moves((col, row), color)
+                if moves[2].can_execute():
+                    return [moves, color]
+                else:
+                    console.print("[bold red]ERROR:[/bold red] location \
+                        does not have any valid moves, please try again")
+                    continue
+            except:
+                console.print("[bold red]ERROR:[/bold red] Please try again.")
+    
+def do_move(moves, color, board):
+    """
+    Gets a move from the current player.
+    
+    If current player is a bot, then update the board state after a delay.
+    If current player is human, prompt them for a move.
 
-        Args:
-            n: The player's number (1 or 2)
-            player_type: "human" or "bot"
-            board: The checkers board
-        """
-        if player_type == "human":
-            self.name = f"Player {n}"
-            self.bot = None
-        else:
-            #implement bot
-            pass
-        self.board = board
-        self.color = color
-        self.n = n
+    Args: 
+        moves: possible moves for our selected piece
 
-    def select_piece(self):
-        """
-        At the start of a players move they must select a piece to then move.
+    Returns: None
+    """
+    if False: # bot is not None:
+        pass
+    else:
+        while moves[2].can_execute():
+            poss_coords = []
+            for move in moves[2].children:
+                poss_coords.append((INT_ALP[move.location.col], move.location.row))
+            #poss_coords = [(move[0], move[1]) for move in moves]
+            console.print("[bold blue]Possible Continuations: \
+            [/bold blue]" + "[bold white]" +f"{poss_coords}[/bold white] ")
+            v = input(f"{color.value}'s Turn> ")
+            out = v.split('|')
 
-        Returns : list [possible moves for selected piece, piece color]
-        """
-        if self.bot is not None:
-            pass
-        else:
-            while True:
-                v = input(f"{self.name}> ")
-
-                try:
-                    col = ALP_INT[v[0]]
-                    row = v[1]
-                    color = self.board._board[row][col].piece.color
-                    pos = self.board._board[row][col]
-                    # Check if input is actually a valid move
-                    if not pos.has_piece:
-                        console.print("[bold red]ERROR:[/bold red] location \
-                            does not have piece, please try again")
-                        continue
-                    moves = self.board.piece_valid_moves((col, row), color)
-                    if moves[2].can_execute():
-                        return [moves, color]
-                    else:
-                        console.print("[bold red]ERROR:[/bold red] location \
-                            does not have any valid moves, please try again")
-                        continue
-                except:
-                    console.print("[bold red]ERROR:[/bold red] Please try again.")
-        
-    def do_move(self, moves, color):
-        """
-        Gets a move from the current player.
-        
-        If current player is a bot, then update the board state after a delay.
-        If current player is human, prompt them for a move.
-
-        Args: 
-            moves: possible moves for our selected piece
-
-        Returns: None
-        """
-        if self.bot is not None:
-            pass
-        else:
-            while moves[2].can_execute:
-                poss_coords = []
-                for move in moves[2].children:
-                    poss_coords.append((move.location.col, move.location.row))
-                #poss_coords = [(move[0], move[1]) for move in moves]
-                console.print("[bold blue]Possible Continuations: \
-                    [/bold blue]" + f"{poss_coords}> ")
-                v = input(f"{self.name}> ")
-            
-                try:
-                    col = ALP_INT[v[0]]
-                    row = v[1]
-                    pos = self.board._board[row][col]
-                    valid = False
-                    move_index = 0
-                    for move in moves[2].children:
-                        if col == move.location.col and row == move.location.row:
-                            self.board.execute_single_move(move[2])
-                            nxt = moves[2].children[move_index]
-                            moves = (nxt.location.col, nxt.location.row, nxt)
-                            print_board(self.board)
-                            valid = True
-                            break
-                        move_index += 1
-                    if not valid:
-                        console.print("[bold red]ERROR:[/bold red] Did not \
-                            enter a valid move. Please try again.")
-                except:
-                    console.print("[bold red]ERROR:[/bold red] Please try again.")
-                        
-                    
-            
-            """
-            # Ask for a move (and re-ask if a valid move is not provided)
-            while in_progress:
-                v = input(f"{self.name}> ")
-
-                try:
-                    col = ALP_INT[v[0]]
-                    row = v[1]
-                    color = self.board._board[row][col].piece.color
-                    pos = self.board._board[row][col]
-                    # Check if input is actually a valid move
-            
-                    moves = self.board.piece_valid_moves((col, row), color)
-                    if moves:
-                        select = True
-                        poss_coords = []
-                        for move in moves:
-                            #self.board._board[move[1]][move[0]].hl = True
-                            poss_coords.append((move[0], move[1]))
-                        print_board(self.Board)
-                        console.print("[bold blue]Possible Continuations: \
-                            [/bold blue]" + f"{poss_coords}> ")
-                        last_iter_moves = moves
-                        for move in last_iter_moves:
-
-                    elif 
-
-                    else:
-                        # This means there are no more valid moves, i.e. we have
-                        # reached the end of a move
-
-                        in_progress = False
-
-                        
-
-
-                    #condition for valid move :
-                        ###
-                    elif v == "Help":
-                        # PRINT VALID MOVES AS TREES #
-                    else:
-                        console.print("[bold red]ERROR:[/bold red] not a valid move, \
-                            please try again.")
-                        console.print("[i yellow]Hint: enter Help for a list of \
-                            valid moves[/i yellow]")
-
-                    if len(v) == 1 and v[0] in "1234567":
-                        try:
-                            col = int(v) - 1
-                            if self.board.can_drop(col):
-                                return col
-                        except ValueError:
-                            continue
-                    if self.board.valid_moves(self.color)
-                    """
-
+            col = ALP_INT[out[0]]
+            row = int(out[1])
+            pos = board._board[row][col]
+            valid = False
+            move_index = 0
+            for move in moves[2].children:
+                print(move.location.col, move.location.row)
+                if col == move.location.col and row == move.location.row:
+                    nxt = moves[2].children[move_index]
+                    board.execute_single_move(moves[2], move_index)
+                    moves = (nxt.location.col, nxt.location.row, nxt)
+                    print_board(board)
+                    valid = True
+                    continue
+                move_index += 1
+            if not valid:
+                console.print("[bold red]ERROR:[/bold red] Did not \
+                    enter a valid move. Please try again.")
 
 def print_board(board: Board) -> None:
     """ 
@@ -254,10 +178,12 @@ def print_board(board: Board) -> None:
             bottom.append(" [bold cyan]" + alph[num - 4] + "[/bold cyan] ")
     # Finally we combine the two strings and print
     console.print(final_s + ''.join(bottom))
+    console.print("Input format: [bold yellow]<x-coord>[/bold yellow] \
+        [bold red]|[/bold red] [bold yellow]<y-coord>[/bold yellow]")
     return None
     
 
-def play_checkers(board: Board, players: Dict[PieceColor, TUIPlayer]) -> None:
+def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> None:
     """ Plays a game of Connect Four on the terminal
     Args:
         board: The board to play on
@@ -266,36 +192,34 @@ def play_checkers(board: Board, players: Dict[PieceColor, TUIPlayer]) -> None:
     Returns: None
     """
     # The starting player is BLACK
-    current = players[PieceColor.BLACK]
+    current = PieceColor.BLACK
 
     # Keep playing until there is a winner:
-    while not board.is_done(current.color):
+    while not board.is_done(current):
         # Print the board
         print()
         print_board(board)
         print()
 
         # Get move from current player
-        info = current.select_piece()
-        current.do_move(info[0], info[1])
+        info = select_piece(board, current)
+        do_move(info[0], info[1], board)
 
 
         # Update the player
-        if current.color == PieceColor.BLACK:
-            current = players[PieceColor.RED]
-        elif current.color == PieceColor.RED:
-            current = players[PieceColor.BLACK]
+        if current.value == PieceColor.BLACK.value:
+            current = PieceColor.RED
+        elif current.value == PieceColor.RED.value:
+            current = PieceColor.BLACK
 
     # Escaped loop, game is over, print final board state
-    print()
+    print("hi")
     print_board(board)
 
     # Find winner and print winner or tie
-    if current.color == PieceColor.BLACK:
-        current = players[PieceColor.RED]
-        console.print(f"[bold magenta]The winner is[/bold magenta] player {current.n}")
-    elif current.color == PieceColor.RED:
-        current = players[PieceColor.BLACK]
-        console.print(f"[bold magenta]The winner is[/bold magenta] player {current.n}")
+    if current == PieceColor.BLACK:
+        console.print("[bold]The winner is[/bold] [bold red]red![/bold red]")
+    elif current == PieceColor.RED:
+        console.print("[bold]The winner is[/bold] [bold blue]blue![/bold blue]")
     else:
         console.print(":pile_of_poo:")

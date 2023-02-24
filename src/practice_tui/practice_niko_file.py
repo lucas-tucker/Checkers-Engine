@@ -471,3 +471,43 @@ for i in range(100):
     print(b)
     input("Press Enter to continue...")
 """
+
+
+
+
+
+
+
+
+
+"""
+
+LOL
+
+
+"""
+class TUIPlayer:
+    """
+    #terminal goes crazy
+    """
+    def __init__(self, n: int, player_type: str, board: Board, color: PieceColor):
+        """
+        #Constructor
+#
+ #       Args:
+  #          n: The player's number (1 or 2)
+   #         player_type: "human" or "bot"
+    #        board: The checkers board
+        """
+        if player_type == "human":
+            self.name = f"Player {n}"
+            self.bot = None
+        else:
+            #implement bot
+            pass
+        self.board = board
+        self.color = color
+        self.n = n
+
+"""
+"""
