@@ -14,10 +14,10 @@ from enum import Enum
 #PieceColor = Enum("PieceColor", ["RED", "BLACK"])
 console = Console()
 
-ALP_INT = {a : 1, b : 2, c : 3, d : 4, e : 5, f : 6, g : 7, h : 8,
-            i : 9, j : 10, k : 11, l : 12, m : 13, n : 14, o : 15,
-            p : 16, q : 17, r : 18, s : 19, t : 20, u : 21, v : 22,
-            w : 23, x : 24, y : 25, z : 26}
+ALP_INT = {'a' : 1, 'b' : 2, 'c' : 3, 'd' : 4, 'e' : 5, 'f' : 6, 'g' : 7, 'h' : 8,
+            'i' : 9, 'j' : 10, 'k' : 11, 'l' : 12, 'm' : 13, 'n' : 14, 'o' : 15,
+            'p' : 16, 'q' : 17, 'r' : 18, 's' : 19, 't' : 20, 'u' : 21, 'v' : 22,
+            'w' : 23, 'x' : 24, 'y' : 25, 'z' : 26}
 
 name: str
 board: Board
@@ -75,7 +75,8 @@ class TUIPlayer:
                         console.print("[bold red]ERROR:[/bold red] location \
                             does not have any valid moves, please try again")
                         continue
-
+                except:
+                    console.print("[bold red]ERROR:[/bold red] Please try again.")
         
     def do_move(self, moves, color):
         """
@@ -93,7 +94,7 @@ class TUIPlayer:
             pass
         else:
             while moves[2].can_execute:
-                poss_cords = []
+                poss_coords = []
                 for move in moves[2].children:
                     poss_coords.append((move.location.col, move.location.row))
                 #poss_coords = [(move[0], move[1]) for move in moves]
@@ -265,7 +266,7 @@ def play_checkers(board: Board, players: Dict[PieceColor, TUIPlayer]) -> None:
     Returns: None
     """
     # The starting player is BLACK
-    current = players[checkers.PieceColor.BLACK]
+    current = players[PieceColor.BLACK]
 
     # Keep playing until there is a winner:
     while not board.is_done(current.color):
