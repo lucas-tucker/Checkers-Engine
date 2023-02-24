@@ -100,67 +100,6 @@ def do_move(moves, color, board):
             if not valid:
                 console.print("[bold red]ERROR:[/bold red] Did not \
                     enter a valid move. Please try again.")
-            #except:
-            #    console.print("[bold red]ERROR:[/bold red] Please try again.")
-                    
-                
-        
-        """
-        # Ask for a move (and re-ask if a valid move is not provided)
-        while in_progress:
-            v = input(f"{self.name}> ")
-
-            try:
-                col = ALP_INT[v[0]]
-                row = v[1]
-                color = self.board._board[row][col].piece.color
-                pos = self.board._board[row][col]
-                # Check if input is actually a valid move
-        
-                moves = self.board.piece_valid_moves((col, row), color)
-                if moves:
-                    select = True
-                    poss_coords = []
-                    for move in moves:
-                        #self.board._board[move[1]][move[0]].hl = True
-                        poss_coords.append((move[0], move[1]))
-                    print_board(self.Board)
-                    console.print("[bold blue]Possible Continuations: \
-                        [/bold blue]" + f"{poss_coords}> ")
-                    last_iter_moves = moves
-                    for move in last_iter_moves:
-
-                elif 
-
-                else:
-                    # This means there are no more valid moves, i.e. we have
-                    # reached the end of a move
-
-                    in_progress = False
-
-                    
-
-
-                #condition for valid move :
-                    ###
-                elif v == "Help":
-                    # PRINT VALID MOVES AS TREES #
-                else:
-                    console.print("[bold red]ERROR:[/bold red] not a valid move, \
-                        please try again.")
-                    console.print("[i yellow]Hint: enter Help for a list of \
-                        valid moves[/i yellow]")
-
-                if len(v) == 1 and v[0] in "1234567":
-                    try:
-                        col = int(v) - 1
-                        if self.board.can_drop(col):
-                            return col
-                    except ValueError:
-                        continue
-                if self.board.valid_moves(self.color)
-                """
-
 
 def print_board(board: Board) -> None:
     """ 
