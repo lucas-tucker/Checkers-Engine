@@ -99,6 +99,33 @@ class Board:
             reg_move_list = self.reg_moves(piece_color)
             return reg_move_list
 
+    def piece_valid_moves(self, coord, piece_color):
+        """
+        When given a tuple of board coordinates, returns a list of tuples with
+        the coordinate to move to and the move itself.
+
+        Args:
+            coord (int, int): Board Coordinates
+            piece_color: Enum piece color
+
+        Returns:
+            list[(int, int, Move), ...] : List of tuples containing the new
+            coordinate and the possible moves from that coordinate. Returns an
+            empty list is no moves are possible from entered coordinate.
+        """
+        possible_moves = []
+        poss_results = []
+        all_moves = self.valid_moves(piece_color)
+        for move in all_moves:
+            if move.location.row == coord[1] and move.location.col == coord[0]:
+                # Do something with move.children
+                return (coord[1], coord[0], move)
+                possible_moves += move.children
+        for move in possible_moves:
+            poss_results.append((move.location.col, move.location.row, move))
+        return poss_results
+
+
     def jump_moves(self, piece_color):
         """
         Returns the jumping-moves of a particular color, and whether
@@ -275,7 +302,7 @@ class Square:
     """
     Class for the squares on the board.
     """
-    def __init__(self, row, col, piece) -> None:
+    def __init__(self, row, col, piece, highlighted=False) -> None:
         """
         Constructor
         
@@ -283,14 +310,18 @@ class Square:
             row (int) : row value of the square
             col (int) : column value of the square
             piece (Piece) : if there is a piece on the board
+            highlighted (bool) : True if this is a possible move
         """
         self.piece = piece
         self.row = row
         self.col = col
         self.neighbors = {'NW' : None, 'NE' : None, 'SE' : None, 'SW' : None}
+        self.hl = highlighted
 
     def __str__(self) -> str:
         """ Returns a string representation of what is on the square."""
+        if self.hl:
+            return "hl"
         if self.piece == None:
             return "□"
         if self.piece.is_king:
@@ -419,7 +450,7 @@ b.execute_move(move)
 print(b)
 print(b._board[2][5].neighbors)
 """
-
+"""
 board_size = 20
 
 b = Board(board_size)
@@ -438,3 +469,4 @@ for i in range(100):
     b.make_random_move(BLACK)
     print(b)
     input("Press Enter to continue...")
+"""
