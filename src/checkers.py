@@ -297,6 +297,36 @@ class Board:
             print(move)
         self.execute_move(move_list[i])
 
+    def execute_single_move(self, move, child):
+        moving_piece = move.location.piece
+        move.children[child].location.piece = moving_piece
+        move.location.piece = None
+        if move.dead_squares:
+            for dead_square in move.dead_squares:
+                dead_square.piece = None
+                #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
+        
+        if move.location.row == 0:
+            if moving_piece.color.value == PieceColor.RED.value:
+                moving_piece.is_king = True
+        if move.location.row == self._board_dim -1:
+            if moving_piece.color.value == PieceColor.BLACK.value:
+                moving_piece.is_king = True
+    
+    def is_done(self, piece_color):
+        """
+        Returns if the game is done, i.e. someone has won
+        
+        Returns:
+            bool, piece_color (lost player)
+        """
+        move_list = self.valid_moves(piece_color)
+        for move in move_list:
+            if move.can_execute():
+                return False
+        #no executeable moves for piece_color
+        return True
+
 
 class Square:
     """
