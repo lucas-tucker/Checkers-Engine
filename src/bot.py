@@ -45,7 +45,7 @@ class Bot:
         self._color = color
         self._opponent_color = opponent_color
 
-    def suggest_move(self) -> int:
+    def suggest_move(self) -> tuple[Moves, int]:
         """
         Suggests a move according to the standards above.
 
