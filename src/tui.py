@@ -152,7 +152,7 @@ def do_move(moves, color, board):
                         nxt = moves[2].children[move_index]
 
                         moves = (nxt.location.col, nxt.location.row, nxt)
-                        print_board(board)
+                        #print_board(board)
                         valid = True
                         continue
                     move_index += 1
@@ -351,5 +351,5 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
 
 
 console = Console()
-b = Board(3)
+b = Board(2)
 play_checkers(b)
