@@ -17,69 +17,25 @@ opposite_color = {}
 opposite_color[PieceColor.RED] = PieceColor.BLACK
 opposite_color[PieceColor.BLACK] = PieceColor.RED
 
-class Board:
-    _board: List[List[Optional[PieceColor]]]
-    _board_dim: int
+class Checkers:
+    _game_board: object
+    board_dim: int
     _size: int
     _winner: Optional[PieceColor]
 
     def __init__(self, size):
-        """
-        Constructor
-
-        Args:
-            size (int) : no. of rows of pieces
-        """
         self._size = size
+        self._game_board = Board(size)
         self._board_dim = 2*size+2
-        self._board = [[None]*self._board_dim for _ in range(self._board_dim)]
         self._winner = None
-        self._populate()
-        
-    def _populate(self):
-        """ Populates the board with squares containing pieces and pieces."""
-        #1st loop - populate board
-        for i in range(self._board_dim): #row
-            for j in range(self._board_dim): #col
-                self._board[i][j] = Square(i,j, None)
-                if (i+j) % 2 == 1:
-                    if i < self._size:
-                        self._board[i][j].piece = Piece(PieceColor.BLACK)
-                
-                    if i > self._size+1:
-                        self._board[i][j].piece = Piece(PieceColor.RED)
-        #2nd loop - connections
-        dirs = {"NW" : (-1, -1),          "NE" : (-1, +1),
 
-                "SW" : (+1, -1),          "SE" : (+1, +1)}
- 
-        for row in self._board:
-            for square in row:
-                if (square.row + square.col) % 2 == 1:
-                    for dir in dirs:
-                        dr, dc = dirs[dir]
-                        cur_row = square.row
-                        cur_col = square.col
-                        target_row = cur_row+dr
-                        target_col = cur_col+dc
-                        if 0 <= target_row < self._board_dim and 0 <= target_col < self._board_dim:
-                            square.neighbors[dir] = self._board[target_row][target_col]
-                            #self._board[target_row][target_col].neighbors[opposite[dir]] = square
+    def __str__(self):
+        return str(self._game_board)
 
-    def __str__(self) -> str:
-        """
-        Represents the board as a string.
 
-        Returns:
-            str
-        """
-        s = ""
-        for row in self._board:
-            for square in row:
-                s += str(square)
-            s += "\n"
-        return s
-    
+    def get_board(self):
+        return self._game_board
+
     def valid_moves(self, piece_color):
         """
         Returns the set of possible moves for a certain player.
@@ -112,6 +68,8 @@ class Board:
             list[(int, int, Move), ...] : List of tuples containing the new
             coordinate and the possible moves from that coordinate. Returns an
             empty list is no moves are possible from entered coordinate.
+        
+            NOT FIXED
         """
         possible_moves = []
         poss_results = []
@@ -136,10 +94,12 @@ class Board:
         
         Returns:
             list[Move], bool
+
+            NOT FIXED
         """
         move_list = []
         can_jump = False
-        for row in self._board:
+        for row in self.get_board().board:
             for square in row:
                 if square.has_color(piece_color):
                     move, can_jump_this_move = self._jump_moves_piece(square)
@@ -157,6 +117,7 @@ class Board:
 
         Returns:
             Move, bool
+
         """
         jump_moves = Moves(square, set())
         self._jump_recurse(square, square.piece.color, jump_moves, square.piece, square)
@@ -181,6 +142,7 @@ class Board:
 
         Returns:
             None
+
         """
         opposite: Optional[PieceColor]
         if piece_color.value == PieceColor.RED.value:
@@ -220,7 +182,7 @@ class Board:
             list[Moves]
         """
         move_list = []
-        for row in self._board:
+        for row in self.get_board().board:
             for square in row:
                 if square.has_color(piece_color):
                     move_list.append(self._reg_moves_piece(square))
@@ -248,7 +210,7 @@ class Board:
                     moves.add_move(square.neighbors[dir], None)
         
         return moves
-    
+
     def execute_move(self, move):
         """ 
         Executes a move given a move tree. 
@@ -258,6 +220,8 @@ class Board:
             move : Move (tree of moves)
         
         Returns: None
+
+        NOT FIXED
         """
         #test method - just execute the first move of the tree - will
         #update later to have true-random
@@ -326,6 +290,72 @@ class Board:
                 return False
         #no executeable moves for piece_color
         return True
+    
+
+class Board:
+    board: List[List[Optional[PieceColor]]]
+    _board_dim: int
+    _size: int
+    _winner: Optional[PieceColor]
+
+    def __init__(self, size):
+        """
+        Constructor
+
+        Args:
+            size (int) : no. of rows of pieces
+        """
+        self._size = size
+        self._board_dim = 2*size+2
+        self.board = [[None]*self._board_dim for _ in range(self._board_dim)]
+        self._winner = None
+        self._populate()
+        
+    def _populate(self):
+        """ Populates the board with squares containing pieces and pieces."""
+        #1st loop - populate board
+        for i in range(self._board_dim): #row
+            for j in range(self._board_dim): #col
+                self.board[i][j] = Square(i,j, None)
+                if (i+j) % 2 == 1:
+                    if i < self._size:
+                        self.board[i][j].piece = Piece(PieceColor.BLACK)
+                
+                    if i > self._size+1:
+                        self.board[i][j].piece = Piece(PieceColor.RED)
+        #2nd loop - connections
+        dirs = {"NW" : (-1, -1),          "NE" : (-1, +1),
+
+                "SW" : (+1, -1),          "SE" : (+1, +1)}
+ 
+        for row in self.board:
+            for square in row:
+                if (square.row + square.col) % 2 == 1:
+                    for dir in dirs:
+                        dr, dc = dirs[dir]
+                        cur_row = square.row
+                        cur_col = square.col
+                        target_row = cur_row+dr
+                        target_col = cur_col+dc
+                        if 0 <= target_row < self._board_dim and 0 <= target_col < self._board_dim:
+                            square.neighbors[dir] = self.board[target_row][target_col]
+                            #self.board[target_row][target_col].neighbors[opposite[dir]] = square
+
+    def __str__(self) -> str:
+        """
+        Represents the board as a string.
+
+        Returns:
+            str
+        """
+        s = ""
+        for row in self.board:
+            for square in row:
+                s += str(square)
+            s += "\n"
+        return s
+    
+        
 
 
 class Square:
@@ -429,74 +459,20 @@ class Moves:
     
     def can_execute(self):
         return bool(self.children) #shortcut to say  
-"""
-multi jump test
-
-b = Board(3)
-print(b)
-m = b._reg_moves_piece(b._board[2][1])
-b.execute_move(m)
-print(b)
-m2 = b._reg_moves_piece(b._board[3][2])
-b.execute_move(m2)
-print(b)
-b._board[1][2].piece = None
-print(b)
-
-#k = b.valid_moves(PieceColor.RED)
-
-m3, a = b._jump_moves_piece(b._board[5][2])
-print(m3)
-b.execute_move(m3)
-print(b)
-
-b._board[0][1].piece = None
-print(b)
-
-m4 = b._reg_moves_piece(b._board[1][2])
-b.execute_move(m4)
-print(b)
-
-m5 = b._reg_moves_piece(b._board[0][1])
-b.execute_move(m5)
-print(b)
-"""
+board_size = 3
+c = Checkers(board_size)
+BLACK = c.get_board().board[0][1].piece.color
+RED = c.get_board().board[2*board_size+1][0].piece.color
 
 """
-multi-king jump test
-
-b = Board(2)
-print(b)
-print(b._board[2][5].neighbors)
-b._board[3][2].piece = Piece(PieceColor.BLACK)
-b._board[3][4].piece = Piece(PieceColor.BLACK)
-b._board[0][3].piece = None
-b._board[4][3].piece.is_king = True
-move, l = b._jump_moves_piece(b._board[4][3])
-print(b)
-print(l)
-print(move)
-b.execute_move(move)
-print(b)
-print(b._board[2][5].neighbors)
-"""
-"""
-board_size = 20
-
-b = Board(board_size)
-print("START")
-print(b)
-BLACK = b._board[0][1].piece.color
-RED = b._board[2*board_size+1][0].piece.color
-
 for i in range(100):
     print("RED MOVE")
-    b.make_random_move(RED)
-    print(b)
+    c.make_random_move(RED)
+    print(c)
     input("Press Enter to continue...")
 
     print("BLACK MOVE")
-    b.make_random_move(BLACK)
-    print(b)
+    c.make_random_move(BLACK)
+    print(c)
     input("Press Enter to continue...")
 """

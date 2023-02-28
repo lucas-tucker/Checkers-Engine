@@ -12,7 +12,7 @@ Done By : Niko
 from typing import Union, Dict
 import time
 
-from checkers import Board, Square, Piece, Moves, PieceColor
+from checkers import Checkers, Board, Square, Piece, Moves, PieceColor
 from rich.console import Console
 from enum import Enum
 
@@ -36,7 +36,7 @@ class ExitError(Exception):
     """
     pass
 
-def select_piece(board, color):
+def select_piece(game, color):
     """
     At the start of a players move they must select a piece to then move.
 
@@ -65,8 +65,8 @@ def select_piece(board, color):
                 out = v.split('|')
                 col = ALP_INT[out[0]]
                 row = int(out[1])
-                pos = board._board[row][col]
-                if color != board._board[row][col].piece.color:
+                pos = game.get_board().board[row][col]
+                if color != game.get_board().board[row][col].piece.color:
                     # If we reach here input was wrong color.
                     console.print("[bold red]ERROR:[/bold red] Piece is not "
                         "the correct color. Please try again.")
@@ -77,7 +77,7 @@ def select_piece(board, color):
                         "does not have piece, please try again")
                     num_input_error += 1
                     continue
-                moves = board.piece_valid_moves((col, row), color)
+                moves = game.piece_valid_moves((col, row), color)
                 if moves[2].can_execute():
                     # If we reach here a valid move was inputted.
                     return [moves, color]
@@ -97,7 +97,7 @@ def select_piece(board, color):
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
                 num_input_error += 1
     
-def do_move(moves, color, board):
+def do_move(moves, color, game):
     """
     Gets a move from the current player.
     
@@ -146,13 +146,13 @@ def do_move(moves, color, board):
                 for move in moves[2].children:
                     if col == move.location.col and row == move.location.row:
                         # If the input has a valid row and column, execute move.
-                        board.execute_single_move(moves[2], move_index)
+                        game.execute_single_move(moves[2], move_index)
 
                         # Now we change moves to the subtree.
                         nxt = moves[2].children[move_index]
 
                         moves = (nxt.location.col, nxt.location.row, nxt)
-                        print_board(board)
+                        print_board(game)
                         valid = True
                         continue
                     move_index += 1
@@ -167,7 +167,7 @@ def do_move(moves, color, board):
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
                 num_imput_error += 1
 
-def print_board(board: Board) -> None:
+def print_board(game: Checkers) -> None:
     """ 
     Prints the board to the screen.
 
@@ -179,10 +179,10 @@ def print_board(board: Board) -> None:
         board: The board to print
     Returns: None
     """
-    size = board._board_dim  - 1
+    size = game._board_dim  - 1
     s = []
     count = 0
-    for row in board._board:
+    for row in game.get_board().board:
         # On each new row we add a number and a divider (ex. 1| )
         if count >= 100:
             s.append(str(count))
@@ -295,7 +295,7 @@ def start_message(color, game_over=False):
     console.print(top + rw2 + rw3 + rw4 + rw5 + rw6 + btm)
     
 
-def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> None:
+def play_checkers(game: Checkers, player1_is_bot=False, player2_is_bot=False) -> None:
     """ Plays a game of Connect Four on the terminal
     Args:
         board: The board to play on
@@ -304,7 +304,7 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
     Returns: None
     """
     # Save the starting board state to restart at the end of game.
-    start_board = Board(board._size)
+    start_board = Checkers(game._size)
 
     # The starting player is BLACK
     current = PieceColor.BLACK
@@ -312,15 +312,15 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
     time.sleep(1)
 
     # Keep playing until there is a winner:
-    while not board.is_done(current):
+    while not game.is_done(current):
         # Print the board
         print()
-        print_board(board)
+        print_board(game)
         print()
 
         # Get move from current player
-        info = select_piece(board, current)
-        do_move(info[0], info[1], board)
+        info = select_piece(game, current)
+        do_move(info[0], info[1], game)
 
 
         # Update the player
@@ -331,7 +331,7 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
 
     # Escaped loop, game is over, print final board state
     print("hi")
-    print_board(board)
+    print_board(game)
 
     # Find winner and print winner or tie
     print()
@@ -351,5 +351,10 @@ def play_checkers(board: Board, player1_is_bot=False, player2_is_bot=False) -> N
 
 
 console = Console()
+'''
 b = Board(3)
 play_checkers(b)
+'''
+
+c = Checkers(3)
+play_checkers(c)
