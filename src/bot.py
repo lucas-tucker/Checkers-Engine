@@ -7,8 +7,7 @@ import random
 import copy
 from typing import Union
 
-import click
-from design import Board, Piece, Moves, Square, PieceColor
+from src.checkers import Board, Piece, Moves, Square, PieceColor
 
 #
 # BOTS
@@ -17,9 +16,9 @@ from design import Board, Piece, Moves, Square, PieceColor
 class Bot:
     """
     Simple Bot that abides by the following strategy:
-    - If jumping moves are available, first choose that which kings a piece.
-    Otherwise, choose that which jumps toward the center of the board. Then,
-    choose the longest jump. If all the same length, then choose at random.
+    - If jumping moves are available, first choose one which kings a piece.
+    Otherwise, choose one which jumps toward the center of the board. Then,
+    choose one of the longest jumps. If all the same length, then choose at random.
 
     - If no jumping moves are available, first choose that which kings a piece.
     Then, move a piece toward the center. Otherwise, move a piece not on squares
@@ -46,7 +45,7 @@ class Bot:
         self._color = color
         self._opponent_color = opponent_color
 
-    def suggest_move(self) -> int:
+    def suggest_move(self) -> tuple[Moves, int]:
         """
         Suggests a move according to the standards above.
 
@@ -60,15 +59,20 @@ class Bot:
             move = self.choose_rand(kinging_mvs)
             move_found = True
 
-        else:
+        if not move_found:
+            center_mvs = self.center_moves(possible_mvs)
+            if center_mvs:
+                move = self.choose_rand(center_mvs)
+                move_found = True
+        
+        if not move_found:
             long_jump_mvs = self.longest_jump(possible_mvs)
             if long_jump_mvs:
-                if len(long_jump_mvs) > 1:
-                    move = self.choose_rand(long_jump_mvs)
-                    move_found = True
+                move = self.choose_rand(long_jump_mvs)
+                move_found = True
 
-            if not(move_found):
-                move = self.choose_rand(possible_mvs)
+        if not(move_found):
+            move = self.choose_rand(possible_mvs)
         
         return move
     
@@ -94,11 +98,34 @@ class Bot:
         return jump_dict
 
     def choose_rand(self, move_dict):
-            rand_mv = random.choice(list(move_dict.items()))
-            rand_child = random.choice(move_dict[rand_mv])
-            return (rand_mv, rand_child)
+        """ 
+        Given a dictionary which maps Moves to lists of child indices, this
+        method returns a random Move-index tuple corresponding to one move on
+        the board. 
+
+        Args:
+            move_dict: dict{Moves: list[int]}
+        
+        Returns:
+            (Moves, int)
+        """
+        rand_mv = random.choice(list(move_dict.items()))
+        rand_child = random.choice(move_dict[rand_mv])
+        return (rand_mv, rand_child)
     
     def jump_length(self, mv):
+        """ 
+        Given a Moves object, this method returns a tuple consisting of the 
+        maximum length of a jump-sequence based on the Moves tree as the first
+        element, and a list of the indicies which correspond to sequences of
+        this length as the second element.
+
+        Args:
+            mv: Moves
+        
+        Returns:
+            (int, list[int])
+        """
         max = 0
         jump_lst = []
         for ind, child in enumerate(mv.children):
@@ -111,12 +138,32 @@ class Bot:
         return (max, jump_lst)
             
     def num_jumps(self, mv):
+        """ 
+        Given a Moves tree, this method returns the height of the tree,
+        corresponding to the longest sequence of jumps off of the move mv.
+
+        Args:
+            mv: Moves
+        
+        Returns:
+            int
+        """
         mv_lst = [0]
         for child in mv.children:
             mv_lst.append(1 + self.jump_length(child))
         return max(mv_lst)
         
     def center_moves(self, move_lst) -> dict:
+        """ 
+        Given a list of Moves objects, returns a dictionary which maps Moves
+        to their subindices which correspond to a center move.
+
+        Args:
+            move_lst: list[Moves]
+        
+        Returns:
+            dict{Moves: list[int]}
+        """
         center_dict = {}
         for mv in move_lst:
             for child_ind in range(len(mv.children)):
@@ -124,6 +171,17 @@ class Bot:
         return center_dict
 
     def update_center_dict(self, mv, child_ind, center_dict):
+        """ 
+        Given a move, its child sub-index, and a dictionary which maps move
+        objects to lists of child subindices, this method adds to the dictionary
+        the move-index pair which corresponds to a center move. This method 
+        does not return anything.
+
+        Args:
+            mv : Moves
+            ind : int
+            center_dict : dict{Moves : list[int]}
+        """
         curr_x = mv.location.col
         potential_x = mv.children[child_ind].location.col
         if self.is_toward_center(curr_x, potential_x):
@@ -132,7 +190,17 @@ class Bot:
             else:
                 center_dict[mv] = [child_ind]
 
-    def kinging_moves(self, move_lst):
+    def kinging_moves(self, move_lst) -> dict:
+        """ 
+        Given a list of Moves objects, returns a dictionary which maps Moves
+        to their subindices which correspond to a kinging move.
+
+        Args:
+            move_lst: list[Moves]
+        
+        Returns:
+            dict{Moves: list[int]}
+        """
         king_dict = {}
         for mv in move_lst:
             for ind, child in enumerate(mv.children):
@@ -141,6 +209,17 @@ class Bot:
         return king_dict
 
     def update_king_dict(self, mv, ind, king_dict):
+        """ 
+        Given a move, its child sub-index, and a dictionary which maps move
+        objects to lists of child subindices, this method adds the move and its
+        appropriate subindex which corresponds to a king move. This method does
+        not return anything.
+
+        Args:
+            mv : Moves
+            ind : int
+            king_dict : dict{Moves : list[int]}
+        """
         add_mv = False
         if mv.children[ind].location.row == 0:
             if self._color.value == PieceColor.RED.value:

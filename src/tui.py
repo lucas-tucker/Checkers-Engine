@@ -351,7 +351,6 @@ def play_checkers(game: Checkers, player1_is_bot=False, player2_is_bot=False) ->
 
 
 console = Console()
-'''
 b = Board(3)
 play_checkers(b)
 '''
