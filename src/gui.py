@@ -7,6 +7,7 @@ Author: Althea Li
 import pygame
 from pygame.locals import *
 import click
+import sys
 
 from checkers import Board, Square, Piece, Moves, PieceColor
 
@@ -20,7 +21,9 @@ try:
 except: 
     os.environ["SDL_VIDEODRIVER"] = 'windib'
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
+os.environ["SDL_VIDEO_CENTERED"] = '1'
 
+pygame.init()
 
 Board_width = 3 # or range from 6 to 20
 Empty_Grid = "Empty_Grid"
@@ -36,9 +39,8 @@ Background = Gray
 
 WIDTH = 600
 HEIGHT = 600
-
+"""
 def draw_board(surface: pygame.surface.Surface, board):
-    """
     Draws the state of the board in the window
     
     Args:
@@ -46,7 +48,6 @@ def draw_board(surface: pygame.surface.Surface, board):
         board: The board to draw
 
     Returns: None
-    """
     
     grid = board._board
     board_dim = board._board_dim
@@ -60,6 +61,7 @@ def draw_board(surface: pygame.surface.Surface, board):
                 pygame.draw.rect(surface, color=White, rect=rect, width=2)
             else:
                 pygame.draw.rect(surface, color=Black, rect=rect, width=2)
+"""
 
 def play_checkers(board):
     """
@@ -72,22 +74,24 @@ def play_checkers(board):
 
     """
     current = PieceColor.BLACK
-    pygame.init()
+
+
     pygame.display.set_caption("Checkers")
-    """
-    surface = pygame.display.set_mode((WIDTH, HEIGHT))
-    """
-    surface1.fill(Background)
+
+
+    pygame.display.set_mode([600,600])
+
+    pygame.display.list_modes()
     clock = pygame.time.Clock()
 
-    draw_board(surface, board)
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                raise SystemExit
-        draw_board(surface, board)
+                sys.exit()
+        
+        #draw_board(surface, board)
         pygame.display.update()
         clock.tick(24)
 
