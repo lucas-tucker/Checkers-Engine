@@ -7,7 +7,7 @@ import random
 import copy
 from typing import Union
 
-from src.checkers import Board, Piece, Moves, Square, PieceColor
+from src.checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
 #
 # BOTS
@@ -28,11 +28,11 @@ class Bot:
     https://hobbylark.com/board-games/Checkers-Strategy-Tactics-How-To-Win
     """
 
-    _board: Board
+    _checkers: Checkers
     _color: str
     _opponent_color: str
 
-    def __init__(self, board: Board, color: str,
+    def __init__(self, checkers: Checkers, color: str,
                  opponent_color: str, player: int):
         """ Constructor
 
@@ -41,7 +41,7 @@ class Bot:
             color: Bot's color
             opponent_color: Opponent's color
         """
-        self._board = board
+        self._checkers = checkers
         self._color = color
         self._opponent_color = opponent_color
 
@@ -51,7 +51,7 @@ class Bot:
 
         Returns: (move, index) --> (Move, int)
         """
-        possible_mvs = Board.valid_moves(self._color)
+        possible_mvs = self._checkers.valid_moves(self._color)
         kinging_mvs = self.kinging_moves(possible_mvs)
         move_found = False
 
@@ -86,14 +86,17 @@ class Bot:
         Returns: Dict(Move: [int])
         """
         #Initialize max to 1 so that we only get jump moves
-        max = 1 
+        curr_max = 1 
         jump_dict = {}
         for mv in possible_mvs:
+            # Get subtree height and corresponding indices for each Moves obj.
             mv_height, indices = self.jump_length(mv)
-            if mv_height > max:
-                max = mv_height
+            # Replace dictionary with current Move if exceeds previous max jumps
+            if mv_height > curr_max:
+                curr_max = mv_height
                 jump_dict = {mv: indices}
-            if mv_height == max:
+            # Add to dictionary if current Move matches previous max jumps
+            if mv_height == curr_max:
                 jump_dict[mv] = indices
         return jump_dict
 
@@ -129,10 +132,13 @@ class Bot:
         max = 0
         jump_lst = []
         for ind, child in enumerate(mv.children):
+            # Find longest move subtree
             child_height = self.num_jumps(child)
+            # Replace index list with ind if subtree height greater than max
             if child_height > max:
                 max = child_height
                 jump_lst = [ind]
+            # Add index if subtree height matches the maximum
             if child_height == max:
                 jump_lst.append(ind)
         return (max, jump_lst)
