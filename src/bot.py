@@ -5,13 +5,16 @@ Bots for Connect-M
 """
 import random
 import copy
+import math
 from typing import Union
 
-from src.checkers import Checkers, Board, Piece, Moves, Square, PieceColor
+from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
 #
 # BOTS
 #
+# exit() method in make_random_move class not defined
+
 
 class Bot:
     """
@@ -29,53 +32,105 @@ class Bot:
     """
 
     _checkers: Checkers
-    _color: str
-    _opponent_color: str
+    _color: PieceColor
 
-    def __init__(self, checkers: Checkers, color: str,
-                 opponent_color: str, player: int):
+    def __init__(self, checkers: Checkers, color: PieceColor):
         """ Constructor
 
         Args:
-            board: Board the bot will play on
+            checkers: Checkers object the bot will use as guide
             color: Bot's color
-            opponent_color: Opponent's color
         """
         self._checkers = checkers
         self._color = color
-        self._opponent_color = opponent_color
 
-    def suggest_move(self) -> tuple[Moves, int]:
+    def suggest_move(self, need_score=False) -> list[tuple[Moves, int], int]:
         """
         Suggests a move according to the standards above.
 
         Returns: (move, index) --> (Move, int)
         """
-        possible_mvs = self._checkers.valid_moves(self._color)
+        score = None
+        possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         kinging_mvs = self.kinging_moves(possible_mvs)
         move_found = False
+        can_jump = self._checkers.jump_moves(self._color)[1]
 
         if kinging_mvs:
+            print("found king")
             move = self.choose_rand(kinging_mvs)
             move_found = True
 
         if not move_found:
             center_mvs = self.center_moves(possible_mvs)
             if center_mvs:
+                print("found center_move")
                 move = self.choose_rand(center_mvs)
                 move_found = True
         
-        if not move_found:
+        if (not move_found) and can_jump:
             long_jump_mvs = self.longest_jump(possible_mvs)
-            if long_jump_mvs:
-                move = self.choose_rand(long_jump_mvs)
-                move_found = True
+            print("found long_jump")
+            move = self.choose_rand(long_jump_mvs)
+            move_found = True
 
         if not(move_found):
-            move = self.choose_rand(possible_mvs)
+            print(self.to_dict(possible_mvs))
+            move = self.choose_rand(self.to_dict(possible_mvs))
         
-        return move
+        return [move, score]
     
+    def beta_depth_smartbot(self, depth):
+        possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
+        high_score = -math.inf
+        cur_best = None
+        for mv in possible_mvs:
+            for ind in range(len(mv.children)):
+                cur_score = self.smartbot_score(mv, ind, depth)
+                if cur_score > high_score:
+                    cur_best = (mv, ind)
+        return cur_best
+
+    def smartbot_score(self, mv, ind, depth):
+        sub_game = copy.deepcopy(self._checkers)
+        sub_game.execute_single_move(mv, ind)
+        score = 0
+        i = depth
+        first_bot = Bot(sub_game, self._color)
+        # NEED TO IMPLEMENT OPPOSITE COLOR
+        second_bot = Bot(sub_game, self.opposite_color(self._color))
+        while i > 0:
+            next_move = sub_game.suggest_move()
+            score += next_move[1]
+
+        return 
+
+    def non_empties(self, mvs):
+        """
+        Given a list of Moves objects, each corresponding to a piece of the
+        bot's color, this method returns a new list of those Moves objects with
+        nonempty children (all valid moves). 
+
+        Returns: list[Moves]
+        """
+        non_empty_lst = []
+        for mv in mvs:
+            if mv.children:
+                non_empty_lst.append(mv)
+        return non_empty_lst
+        
+    def to_dict(self, mvs_lst):
+        """
+        Given a list of Moves objects, this method returns a dictionary which 
+        maps each Moves object to its children. 
+
+        Returns: dict{Moves : list[int]}
+        """
+        mv_dict = {}
+        for mv in mvs_lst:
+            mv_dict[mv] = list(range(len(mv.children)))
+        return mv_dict
+
     def longest_jump(self, possible_mvs):
         """
         Given a list of possible squares (moves), returns a dictionary of moves
@@ -85,8 +140,7 @@ class Bot:
 
         Returns: Dict(Move: [int])
         """
-        #Initialize max to 1 so that we only get jump moves
-        curr_max = 1 
+        curr_max = 0 
         jump_dict = {}
         for mv in possible_mvs:
             # Get subtree height and corresponding indices for each Moves obj.
@@ -112,7 +166,7 @@ class Bot:
         Returns:
             (Moves, int)
         """
-        rand_mv = random.choice(list(move_dict.items()))
+        rand_mv = random.choice(list(move_dict.items()))[0]
         rand_child = random.choice(move_dict[rand_mv])
         return (rand_mv, rand_child)
     
@@ -156,7 +210,7 @@ class Bot:
         """
         mv_lst = [0]
         for child in mv.children:
-            mv_lst.append(1 + self.jump_length(child))
+            mv_lst.append(1 + self.num_jumps(child))
         return max(mv_lst)
         
     def center_moves(self, move_lst) -> dict:
@@ -191,7 +245,7 @@ class Bot:
         curr_x = mv.location.col
         potential_x = mv.children[child_ind].location.col
         if self.is_toward_center(curr_x, potential_x):
-            if center_dict[mv]:
+            if mv in center_dict:
                 center_dict.append(child_ind)
             else:
                 center_dict[mv] = [child_ind]
@@ -209,12 +263,12 @@ class Bot:
         """
         king_dict = {}
         for mv in move_lst:
-            for ind, child in enumerate(mv.children):
-                if not(child.location.piece.is_king):
-                    self.update_king_dict(mv, ind, king_dict)
+            if not(mv.location.piece.is_king):
+                for ind, child in enumerate(mv.children):
+                    self.update_king_dict(mv, ind, child, king_dict)
         return king_dict
 
-    def update_king_dict(self, mv, ind, king_dict):
+    def update_king_dict(self, mv, ind, child, king_dict):
         """ 
         Given a move, its child sub-index, and a dictionary which maps move
         objects to lists of child subindices, this method adds the move and its
@@ -227,14 +281,14 @@ class Bot:
             king_dict : dict{Moves : list[int]}
         """
         add_mv = False
-        if mv.children[ind].location.row == 0:
+        if child.location.row == 0:
             if self._color.value == PieceColor.RED.value:
                 add_mv = True
-        if mv.children[ind].location.row == self._board._board_dim - 1:
+        if child.location.row == self._checkers._board_dim - 1:
             if self._color.value == PieceColor.BLACK.value:
                 add_mv = True
         if add_mv:
-            if king_dict[mv]:
+            if mv in king_dict:
                 king_dict[mv].append(ind)
             else:
                 king_dict[mv] = [ind]
@@ -251,12 +305,27 @@ class Bot:
         Returns:
             bool
         """
-        if float(x_1) < (self._board.size / 2) - 0.5 and x_1 < x_2:
+        if float(x_1) < (self._checkers._size / 2) - 0.5 and x_1 < x_2:
                 return True
-        if float(x_1) > (self._board.size / 2) - 0.5 and x_1 > x_2:
+        if float(x_1) > (self._checkers._size / 2) - 0.5 and x_1 > x_2:
                 return True
         return False
     
-    
+#BELOW IS TESTING CODE    
+""" game = Checkers(4)
+black = PieceColor.BLACK
+red = PieceColor.RED
+comp1 = Bot(game, PieceColor.RED)
+comp2 = Bot(game, PieceColor.BLACK)
+prev = red
 
-
+while (not game.is_done(red)) and (not game.is_done(black)):
+    print(game)
+    if prev != red:
+        move, index = comp1.suggest_move()[0]
+        game.execute_single_move(move, index)
+        prev = red
+    else:
+        move, index = comp2.suggest_move()[0]
+        game.execute_single_move(move, index)
+        prev = black """
