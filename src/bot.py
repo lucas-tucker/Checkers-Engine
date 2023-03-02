@@ -11,22 +11,25 @@ from typing import Union
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
 #
-# BOTS
-#
-# exit() method in make_random_move class not defined
+# NOTES:
+# engine_suggest() still in beta mode, wins 97.5% over random moves 
+# Notes for Daniel: 
+# - exit() method in make_random_move class not defined
+# - running into error in line 274 of checkers.py code where
+# moving_piece is apparently a NoneType object
 
 
 class Bot:
     """
-    Simple Bot that abides by the following strategy:
-    - If jumping moves are available, first choose one which kings a piece.
-    Otherwise, choose one which jumps toward the center of the board. Then,
-    choose one of the longest jumps. If all the same length, then choose at random.
+    Bot that chooses the move with the most points:
+  
+    - King move is +6 points, Long Jump move is +3 points, Jump move is +1
+    point, and Center Move (which avoids moving pieces at the ends of the
+    board) is +1. Random move is +0. 
 
-    - If no jumping moves are available, first choose that which kings a piece.
-    Then, move a piece toward the center. Otherwise, move a piece not on squares
-    1 and 3 (for white) and not on 30 and 32 (for black), otherwise choose
-    random move.
+    Engine abides by the following strategy:
+    - For all possible moves, play a mini-game (using basic bots) up to depth
+    and associate with it a score. Then, choose the move with the highest score.
 
     https://hobbylark.com/board-games/Checkers-Strategy-Tactics-How-To-Win
     """
@@ -43,67 +46,106 @@ class Bot:
         """
         self._checkers = checkers
         self._color = color
+        self._size = self._checkers._size
 
-    def suggest_move(self, need_score=False) -> list[tuple[Moves, int], int]:
+
+    def basic_suggest(self) -> list[tuple[Moves, int], int]:
         """
         Suggests a move according to the standards above.
 
         Returns: (move, index) --> (Move, int)
         """
-        score = None
-        possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
-        kinging_mvs = self.kinging_moves(possible_mvs)
-        move_found = False
-        can_jump = self._checkers.jump_moves(self._color)[1]
-
-        if kinging_mvs:
-            print("found king")
-            move = self.choose_rand(kinging_mvs)
-            move_found = True
-
-        if not move_found:
-            center_mvs = self.center_moves(possible_mvs)
-            if center_mvs:
-                print("found center_move")
-                move = self.choose_rand(center_mvs)
-                move_found = True
-        
-        if (not move_found) and can_jump:
-            long_jump_mvs = self.longest_jump(possible_mvs)
-            print("found long_jump")
-            move = self.choose_rand(long_jump_mvs)
-            move_found = True
-
-        if not(move_found):
-            print(self.to_dict(possible_mvs))
-            move = self.choose_rand(self.to_dict(possible_mvs))
-        
-        return [move, score]
-    
-    def beta_depth_smartbot(self, depth):
+        #Best scoring setting seems to be 6, 3, 1
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         high_score = -math.inf
         cur_best = None
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
-                cur_score = self.smartbot_score(mv, ind, depth)
+                cur_score = self.get_score(self._color, mv, ind, self)
                 if cur_score > high_score:
+                    high_score = cur_score
+                    cur_best = [mv, ind]
+        return cur_best + [high_score]
+        
+    def engine_suggest(self, depth):
+        """
+        For each possible valid moves, this method finds the move which leads
+        to the highest score if two basic bots (using basic_suggest) were
+        to play out another depth-many moves after playing that one.
+
+        Returns: (move, index) --> (Move, int)
+        """
+        possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
+        high_score = -math.inf
+        cur_best = None
+        for mv in possible_mvs:
+            for ind in range(len(mv.children)):
+                cur_score = self.subgame_score(mv, ind, depth)
+                if cur_score > high_score:
+                    high_score = cur_score
                     cur_best = (mv, ind)
         return cur_best
+    
+    def get_score(self, color, mv, ind, bot):
+        """
+        Given a color, move, a corresponding index, and a bot, this method
+        gets the score 
 
-    def smartbot_score(self, mv, ind, depth):
-        sub_game = copy.deepcopy(self._checkers)
-        sub_game.execute_single_move(mv, ind)
+        Returns: (move, index) --> (Move, int)
+        """
+        possible_mvs = bot.non_empties(bot._checkers.valid_moves(color))
+        kinging_mvs = bot.kinging_moves(possible_mvs)
         score = 0
-        i = depth
-        first_bot = Bot(sub_game, self._color)
-        # NEED TO IMPLEMENT OPPOSITE COLOR
-        second_bot = Bot(sub_game, self.opposite_color(self._color))
-        while i > 0:
-            next_move = sub_game.suggest_move()
-            score += next_move[1]
+        can_jump = bot._checkers.jump_moves(color)[1]
+        if can_jump:
+            score += 1
+        if mv in kinging_mvs and ind in kinging_mvs[mv]:
+            score += 6
+        long_jump_mvs = self.longest_jump(possible_mvs)
+        if mv in long_jump_mvs and ind in long_jump_mvs[mv]:
+            score += 3
+        center_mvs = self.center_moves(possible_mvs)
+        if mv in center_mvs and ind in center_mvs[mv]:
+            score += 1
+        return score
+    
+    def opposite_color(self, color):
+        if color == PieceColor.RED:
+            return PieceColor.BLACK
+        return PieceColor.RED
 
-        return 
+    def subgame_score(self, mv, ind, depth):
+        """
+        TO WRITE
+        """
+        sub_game = copy.deepcopy(self._checkers)
+        first_bot = Bot(sub_game, self._color)
+        score = self.get_score(self._color, mv, ind, first_bot)
+        sub_game.execute_single_move(mv, ind)
+        first_bot = Bot(sub_game, self._color)
+        second_bot = Bot(sub_game, self.opposite_color(self._color))
+        opp = self.opposite_color(self._color)
+        color = opp
+        i = depth
+        while i > 0:
+            if color == opp:     
+                mv, ind, scr = second_bot.basic_suggest()
+                score = score - scr
+                sub_game.execute_single_move(mv, ind)
+                if sub_game.is_done(self.opposite_color(color)):
+                    score = score - 100
+                    break
+                color = self._color
+            if color == self._color:     
+                mv, ind, scr = first_bot.basic_suggest()
+                score = score + scr
+                sub_game.execute_single_move(mv, ind)
+                if sub_game.is_done(self.opposite_color(color)):
+                    score = score + 100
+                    break
+                color = opp
+            i = i - 1
+        return score
 
     def non_empties(self, mvs):
         """
@@ -242,13 +284,16 @@ class Bot:
             ind : int
             center_dict : dict{Moves : list[int]}
         """
-        curr_x = mv.location.col
-        potential_x = mv.children[child_ind].location.col
-        if self.is_toward_center(curr_x, potential_x):
-            if mv in center_dict:
-                center_dict.append(child_ind)
-            else:
-                center_dict[mv] = [child_ind]
+        col = mv.location.col
+        # Avoid moving pieces on the ends of the board
+        if (col > 0 and col < self._checkers._board_dim - 1):
+            curr_x = mv.location.col
+            potential_x = mv.children[child_ind].location.col
+            if self.is_toward_center(curr_x, potential_x):
+                if mv in center_dict:
+                    center_dict[mv].append(child_ind)
+                else:
+                    center_dict[mv] = [child_ind]
 
     def kinging_moves(self, move_lst) -> dict:
         """ 
@@ -311,21 +356,63 @@ class Bot:
                 return True
         return False
     
-#BELOW IS TESTING CODE    
-""" game = Checkers(4)
-black = PieceColor.BLACK
-red = PieceColor.RED
-comp1 = Bot(game, PieceColor.RED)
-comp2 = Bot(game, PieceColor.BLACK)
-prev = red
 
-while (not game.is_done(red)) and (not game.is_done(black)):
-    print(game)
-    if prev != red:
-        move, index = comp1.suggest_move()[0]
-        game.execute_single_move(move, index)
-        prev = red
+# Engine Testing Code Below
+bot_wins = 0
+rand_wins = 0
+
+for i in range(100):
+    game = Checkers(4)
+    black = PieceColor.BLACK
+    red = PieceColor.RED
+    comp1 = Bot(game, PieceColor.RED)
+    comp2 = Bot(game, PieceColor.BLACK)
+    prev = red
+    while (not game.is_done(red)) and (not game.is_done(black)):
+        if prev != red:
+            move, index = comp1.engine_suggest(depth=40)
+            game.execute_single_move(move, index)
+            prev = red
+        else:
+            possible_mvs = comp1.non_empties(comp1._checkers.valid_moves(comp2._color))
+            move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
+            game.execute_single_move(move, index)
+            prev = black
+    if prev == red:
+        bot_wins += 1
     else:
-        move, index = comp2.suggest_move()[0]
-        game.execute_single_move(move, index)
-        prev = black """
+        rand_wins += 1
+    print(f"Engine won {bot_wins} games, random won {rand_wins} games")
+
+
+print(f"Engine won {bot_wins} games, random won {rand_wins} games")
+
+
+
+
+"""  def simple_suggest(self) -> list[tuple[Moves, int], int]:
+        #Best scoring seems to be 5, 3, 1
+        possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
+        kinging_mvs = self.kinging_moves(possible_mvs)
+        move_found = False
+        can_jump = self._checkers.jump_moves(self._color)[1]
+
+        if kinging_mvs:
+            move = self.choose_rand(kinging_mvs)
+            move_found = True
+        
+        if (not move_found) and can_jump:
+            long_jump_mvs = self.longest_jump(possible_mvs)
+            move = self.choose_rand(long_jump_mvs)
+            move_found = True
+
+        if not move_found:
+            center_mvs = self.center_moves(possible_mvs)
+            if center_mvs:
+                move = self.choose_rand(center_mvs)
+                move_found = True
+
+        if not(move_found):
+            move = self.choose_rand(self.to_dict(possible_mvs))
+        return move
+"""
