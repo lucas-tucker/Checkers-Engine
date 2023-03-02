@@ -251,8 +251,9 @@ class Checkers:
         move_list = self.valid_moves(piece_color)
         random.shuffle(move_list)
         if len(move_list) == 0:
+            return None
             #print("WIN")
-            exit()
+            #exit()
         i = 0
         while not move_list[i].can_execute():
             i += 1
