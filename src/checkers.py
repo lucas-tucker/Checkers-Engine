@@ -68,8 +68,6 @@ class Checkers:
             list[(int, int, Move), ...] : List of tuples containing the new
             coordinate and the possible moves from that coordinate. Returns an
             empty list is no moves are possible from entered coordinate.
-        
-            NOT FIXED
         """
         possible_moves = []
         poss_results = []
@@ -224,18 +222,19 @@ class Checkers:
         NOT FIXED
         """
         #test method - just execute the first move of the tree - will
-        #update later to have true-random
+        #HAS TRUE RANDOM
         if move.can_execute():
             cur_move = move
             while bool(cur_move.children):
+                index = random.randint(0, len(cur_move.children)-1)
                 moving_piece = cur_move.location.piece
                 cur_move.location.piece = None
-                cur_move.children[0].location.piece = moving_piece
-                cur_move = cur_move.children[0]
+                cur_move.children[index].location.piece = moving_piece
+                cur_move = cur_move.children[index]
             if cur_move.dead_squares:
                 for dead_square in cur_move.dead_squares:
                     dead_square.piece = None
-                    print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
+                    #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
             
             #check if we are kinging
             if cur_move.location.row == 0:
@@ -252,13 +251,14 @@ class Checkers:
         move_list = self.valid_moves(piece_color)
         random.shuffle(move_list)
         if len(move_list) == 0:
-            print("WIN")
-            exit()
+            return None
+            #print("WIN")
+            #exit()
         i = 0
         while not move_list[i].can_execute():
             i += 1
-        for move in move_list:
-            print(move)
+        #for move in move_list:
+            #print(move)
         self.execute_move(move_list[i])
 
     def execute_single_move(self, move, child):
