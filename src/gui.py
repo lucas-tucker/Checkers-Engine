@@ -123,6 +123,8 @@ def play_checkers(game):
     surface = pygame.display.set_mode([WIDTH, HEIGHT])
     clock = pygame.time.Clock()
 
+    pygame.key.set_repeat(1,10)
+
     draw_board(surface, game)
 
     board_dim = game._board_dim
@@ -173,7 +175,7 @@ def play_checkers(game):
                     if square.piece.color == current:
                         piece_valid_move = game.piece_valid_moves((select_col, select_row), current)
                         current_move = piece_valid_move[2]
-            if event.type == pygame.KEYUP and locked_in == False:
+            if event.type == pygame.KEYDOWN and locked_in == False:
                 if 'r' == event.unicode:
                     game.make_random_move(current)
                     current = opposite_color[current]
