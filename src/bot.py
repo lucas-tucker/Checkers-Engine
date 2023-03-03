@@ -56,17 +56,23 @@ class Bot:
         # possible_mvs retrieves all possible moves for this bot's color
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         high_score = -math.inf
-        cur_best = None
+        best_moves = {}
         # Loop through possible_mvs and find highest scoring move
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
                 # Call helper method get_score
                 cur_score = self.get_score(self._color, mv, ind, self)
                 if cur_score > high_score:
+                    best_moves = {mv : [ind]}
                     high_score = cur_score
-                    cur_best = [mv, ind]
+                if cur_score == high_score:
+                    if mv in best_moves:
+                        best_moves[mv].append(ind)
+                    else:
+                        best_moves[mv] = [ind]
+        best = self.choose_rand(best_moves)
         # Return the move in addition to the score
-        return cur_best + [high_score]
+        return best + [high_score]
         
     def subgame_suggest(self, depth):
         """
@@ -224,7 +230,7 @@ class Bot:
         """
         rand_mv = random.choice(list(move_dict.items()))[0]
         rand_child = random.choice(move_dict[rand_mv])
-        return (rand_mv, rand_child)
+        return [rand_mv, rand_child]
     
     def jump_length(self, mv):
         """ 
@@ -364,9 +370,9 @@ class Bot:
         Returns:
             bool
         """
-        if float(x_1) > (self._checkers._size / 2) - 0.5 and x_1 > x_2:
+        if float(x_1) < (self._checkers._board_dim / 2) - 0.5 and x_1 < x_2:
                 return True
-        if float(x_1) < (self._checkers._size / 2) - 0.5 and x_1 < x_2:
+        if float(x_1) > (self._checkers._board_dim / 2) - 0.5 and x_1 > x_2:
                 return True
         return False
     
@@ -375,7 +381,7 @@ class Bot:
 bot_wins = 0
 rand_wins = 0
 
-for i in range(10):
+for i in range(100):
     game = Checkers(4)
     black = PieceColor.BLACK
     red = PieceColor.RED
