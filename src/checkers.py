@@ -22,12 +22,16 @@ class Checkers:
     board_dim: int
     _size: int
     _winner: Optional[PieceColor]
+    consecutive_non_jump_moves: int
+    _resigned: bool
 
     def __init__(self, size):
         self._size = size
         self._game_board = Board(size)
         self._board_dim = 2*size+2
         self._winner = None
+        self.consecutive_non_jump_moves = 0
+        self._resigned = False
 
     def __str__(self):
         return str(self._game_board)
@@ -234,6 +238,9 @@ class Checkers:
             if cur_move.dead_squares:
                 for dead_square in cur_move.dead_squares:
                     dead_square.piece = None
+                    self.consecutive_non_jump_moves = 0
+            else:
+                self.consecutive_non_jump_moves += 1
                     #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
             
             #check if we are kinging
@@ -268,7 +275,10 @@ class Checkers:
         if move.children[child].dead_squares:
             for dead_square in move.children[child].dead_squares:
                 dead_square.piece = None
+                self.consecutive_non_jump_moves = 0
                 #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
+        else:
+            self.consecutive_non_jump_moves += 1
         
         if move.children[child].location.row == 0:
             if moving_piece.color.value == PieceColor.RED.value:
@@ -279,17 +289,37 @@ class Checkers:
     
     def is_done(self, piece_color):
         """
-        Returns if the game is done, i.e. someone has won
+        Returns if the game is done, i.e. someone has won.
         
         Returns:
-            bool, piece_color (lost player)
+            bool (True if piece_color has no valid moves left or 
+                move count exceded, False otherwise)
         """
+        if self._resigned:
+            #game ends bc one player resigned
+            return True
+        elif self.consecutive_non_jump_moves >= 80:
+            #draw by 40-move rule
+            return True
+
+        #we must check if there is a valid move of the piece_color player
         move_list = self.valid_moves(piece_color)
         for move in move_list:
             if move.can_execute():
                 return False
         #no executeable moves for piece_color
+        self._winner = opposite_color(piece_color)
         return True
+    
+    def resign_game(self, piece_color):
+        """
+        The player of piece_color resigns the game.
+
+        Returns:
+            None
+        """
+        self._winner = opposite_color(piece_color)
+
     
 
 class Board:

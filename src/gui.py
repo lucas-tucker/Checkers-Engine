@@ -60,7 +60,7 @@ def draw_board(surface: pygame.surface.Surface, game, move=None):
         for col in range(board_dim):
             rect = (col * cw, row * rh, cw, rh)
             if (row + col)%2 == 0:
-                pygame.draw.rect(surface, color=Gray, rect=rect, width=0)
+                pygame.draw.rect(surface, color=White, rect=rect, width=0)
             else:
                 pygame.draw.rect(surface, color=Black, rect=rect, width=0)
 
