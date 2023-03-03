@@ -61,7 +61,7 @@ class Bot:
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
                 # Call helper method get_score
-                cur_score = self.get_score(self._color, mv, ind, self)
+                cur_score = self.get_score(self._color, mv, ind, self, possible_mvs)
                 if cur_score > high_score:
                     best_moves = {mv : [ind]}
                     high_score = cur_score
@@ -87,33 +87,33 @@ class Bot:
         cur_best = None
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
-                cur_score = self.subgame_score(mv, ind, depth)
+                cur_score = self.subgame_score(mv, ind, depth, possible_mvs)
                 if cur_score > high_score:
                     high_score = cur_score
                     cur_best = (mv, ind)
         return cur_best
     
-    def get_score(self, color, mv, ind, bot):
+    def get_score(self, color, mv, ind, bot, possible_mvs):
         """
         Given a color, move, a corresponding index, and a bot, this method
         gets the score 
 
         Returns: (move, index) --> (Move, int)
         """
-        possible_mvs = bot.non_empties(bot._checkers.valid_moves(color))
         kinging_mvs = bot.kinging_moves(possible_mvs)
-        long_jump_mvs = self.longest_jump(possible_mvs)
-        center_mvs = self.center_moves(possible_mvs)
+        long_jump_mvs = bot.longest_jump(possible_mvs)
+        center_mvs = bot.center_moves(possible_mvs)
+
         # Add to score to incorporate all information
         score = 0
         can_jump = bot._checkers.jump_moves(color)[1]
         if can_jump:
             score += 1
-        if mv in kinging_mvs and ind in kinging_mvs[mv]:
+        if mv in kinging_mvs: #and ind in kinging_mvs[mv]:
             score += 5
-        if mv in long_jump_mvs and ind in long_jump_mvs[mv]:
+        if mv in long_jump_mvs: #and ind in long_jump_mvs[mv]:
             score += 3
-        if mv in center_mvs and ind in center_mvs[mv]:
+        if mv in center_mvs: #and ind in center_mvs[mv]:
             score += 1
         return score
     
@@ -122,7 +122,7 @@ class Bot:
             return PieceColor.BLACK
         return PieceColor.RED
 
-    def subgame_score(self, mv, ind, depth):
+    def subgame_score(self, mv, ind, depth, possible_mvs):
         """
         Given a move, a corresponding index, and a depth number, this method
         plays a game between two basic bots (using basic_suggest) depth-many
@@ -134,13 +134,13 @@ class Bot:
         # PROBLEM: deepcopy seems to not create a deep copy of the board state
         sub_game = copy.deepcopy(self._checkers)
         first_bot = Bot(sub_game, self._color)
-        score = self.get_score(self._color, mv, ind, first_bot)
+        score = self.get_score(self._color, mv, ind, first_bot, possible_mvs)
 
-        print("SUBGAME 1")
-        print(self._checkers)
+        #print("SUBGAME 1")
+        #print(self._checkers)
         sub_game.execute_single_move(mv, ind)
-        print("SUBGAME 2")
-        print(self._checkers)
+        #print("SUBGAME 2")
+        #print(self._checkers)
 
         opp = self.opposite_color(self._color)
         second_bot = Bot(sub_game, opp)
@@ -381,15 +381,15 @@ class Bot:
 bot_wins = 0
 rand_wins = 0
 
-for i in range(100):
-    game = Checkers(4)
+for i in range(30):
+    game = Checkers(8)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
     prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
         if prev == black:
-            move, index, scr = comp1.basic_suggest()
+            move, index = comp1.subgame_suggest(depth=3)
             game.execute_single_move(move, index)
             prev = red
         else:
