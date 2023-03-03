@@ -37,8 +37,8 @@ Gray = (180, 180, 180)
 White = (255,255,255)
 Background = Gray
 
-WIDTH = 600
-HEIGHT = 600
+WIDTH = 900
+HEIGHT = 900
 
 def draw_board(surface: pygame.surface.Surface, game, move=None):
     """
@@ -60,7 +60,7 @@ def draw_board(surface: pygame.surface.Surface, game, move=None):
         for col in range(board_dim):
             rect = (col * cw, row * rh, cw, rh)
             if (row + col)%2 == 0:
-                pygame.draw.rect(surface, color=White, rect=rect, width=0)
+                pygame.draw.rect(surface, color=Gray, rect=rect, width=0)
             else:
                 pygame.draw.rect(surface, color=Black, rect=rect, width=0)
 
@@ -123,7 +123,7 @@ def play_checkers(game):
     surface = pygame.display.set_mode([WIDTH, HEIGHT])
     clock = pygame.time.Clock()
 
-    pygame.key.set_repeat(1,10)
+    pygame.key.set_repeat(50,100)
 
     draw_board(surface, game)
 
@@ -142,8 +142,10 @@ def play_checkers(game):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 pos_x, pos_y = pygame.mouse.get_pos() #row is y, col is x
-                select_row = pos_y//square_size
-                select_col = pos_x//square_size
+                pos_x -= 5
+                pos_y -= 5
+                select_row = (pos_y//square_size)
+                select_col = (pos_x//square_size)
                 square = game.get_board().board[select_row][select_col]
                 """
                 print("pos_x: " + str(pos_x))
@@ -177,6 +179,11 @@ def play_checkers(game):
                         current_move = piece_valid_move[2]
             if event.type == pygame.KEYDOWN and locked_in == False:
                 if 'r' == event.unicode:
+                    game.make_random_move(current)
+                    current = opposite_color[current]
+                    current_move = None
+            if event.type == pygame.KEYUP and locked_in == False:
+                if 't' == event.unicode:
                     game.make_random_move(current)
                     current = opposite_color[current]
                     current_move = None
