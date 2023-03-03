@@ -11,9 +11,7 @@ from typing import Union
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
 #
-# NOTES:
-# engine_suggest() still in beta mode, wins 97.5% over random moves 
-# Notes for Daniel: 
+# Notes:
 # - exit() method in make_random_move class not defined
 # - running into error in line 274 of checkers.py code where
 # moving_piece is apparently a NoneType object
@@ -27,7 +25,7 @@ class Bot:
     point, and Center Move (which avoids moving pieces at the ends of the
     board) is +1. Random move is +0. 
 
-    Engine abides by the following strategy:
+    subgame_suggest abides by the following strategy:
     - For all possible moves, play a mini-game (using basic bots) up to depth
     and associate with it a score. Then, choose the move with the highest score.
 
@@ -55,19 +53,22 @@ class Bot:
 
         Returns: (move, index) --> (Move, int)
         """
-        #Best scoring setting seems to be 6, 3, 1
+        # possible_mvs retrieves all possible moves for this bot's color
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         high_score = -math.inf
         cur_best = None
+        # Loop through possible_mvs and find highest scoring move
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
+                # Call helper method get_score
                 cur_score = self.get_score(self._color, mv, ind, self)
                 if cur_score > high_score:
                     high_score = cur_score
                     cur_best = [mv, ind]
+        # Return the move in addition to the score
         return cur_best + [high_score]
         
-    def engine_suggest(self, depth):
+    def subgame_suggest(self, depth):
         """
         For each possible valid moves, this method finds the move which leads
         to the highest score if two basic bots (using basic_suggest) were
@@ -95,16 +96,17 @@ class Bot:
         """
         possible_mvs = bot.non_empties(bot._checkers.valid_moves(color))
         kinging_mvs = bot.kinging_moves(possible_mvs)
+        long_jump_mvs = self.longest_jump(possible_mvs)
+        center_mvs = self.center_moves(possible_mvs)
+        # Add to score to incorporate all information
         score = 0
         can_jump = bot._checkers.jump_moves(color)[1]
         if can_jump:
             score += 1
         if mv in kinging_mvs and ind in kinging_mvs[mv]:
-            score += 6
-        long_jump_mvs = self.longest_jump(possible_mvs)
+            score += 5
         if mv in long_jump_mvs and ind in long_jump_mvs[mv]:
             score += 3
-        center_mvs = self.center_moves(possible_mvs)
         if mv in center_mvs and ind in center_mvs[mv]:
             score += 1
         return score
@@ -116,17 +118,29 @@ class Bot:
 
     def subgame_score(self, mv, ind, depth):
         """
-        TO WRITE
+        Given a move, a corresponding index, and a depth number, this method
+        plays a game between two basic bots (using basic_suggest) depth-many
+        moves ahead, adding to the score the first_bot's moves and subtracting
+        the opposite colored bot's moves.
+
+        Returns: (move, index) --> (Move, int)
         """
+        # PROBLEM: deepcopy seems to not create a deep copy of the board state
         sub_game = copy.deepcopy(self._checkers)
         first_bot = Bot(sub_game, self._color)
         score = self.get_score(self._color, mv, ind, first_bot)
+
+        print("SUBGAME 1")
+        print(self._checkers)
         sub_game.execute_single_move(mv, ind)
-        first_bot = Bot(sub_game, self._color)
-        second_bot = Bot(sub_game, self.opposite_color(self._color))
+        print("SUBGAME 2")
+        print(self._checkers)
+
         opp = self.opposite_color(self._color)
+        second_bot = Bot(sub_game, opp)
         color = opp
         i = depth
+        # play i many moves ahead using basic_suggest
         while i > 0:
             if color == opp:     
                 mv, ind, scr = second_bot.basic_suggest()
@@ -136,7 +150,7 @@ class Bot:
                     score = score - 100
                     break
                 color = self._color
-            if color == self._color:     
+            else:   
                 mv, ind, scr = first_bot.basic_suggest()
                 score = score + scr
                 sub_game.execute_single_move(mv, ind)
@@ -326,11 +340,11 @@ class Bot:
             king_dict : dict{Moves : list[int]}
         """
         add_mv = False
-        if child.location.row == 0:
-            if self._color.value == PieceColor.RED.value:
+        is_red = self._color.value == PieceColor.RED.value
+        # Check to see if piece is at the end of the board
+        if child.location.row == 0 and is_red:
                 add_mv = True
-        if child.location.row == self._checkers._board_dim - 1:
-            if self._color.value == PieceColor.BLACK.value:
+        if child.location.row == self._checkers._board_dim - 1 and not(is_red):
                 add_mv = True
         if add_mv:
             if mv in king_dict:
@@ -350,42 +364,39 @@ class Bot:
         Returns:
             bool
         """
-        if float(x_1) < (self._checkers._size / 2) - 0.5 and x_1 < x_2:
-                return True
         if float(x_1) > (self._checkers._size / 2) - 0.5 and x_1 > x_2:
+                return True
+        if float(x_1) < (self._checkers._size / 2) - 0.5 and x_1 < x_2:
                 return True
         return False
     
 
-# Engine Testing Code Below
+# Testing Code Below
 bot_wins = 0
 rand_wins = 0
 
-for i in range(100):
+for i in range(10):
     game = Checkers(4)
     black = PieceColor.BLACK
     red = PieceColor.RED
-    comp1 = Bot(game, PieceColor.RED)
-    comp2 = Bot(game, PieceColor.BLACK)
-    prev = red
+    comp1 = Bot(game, red)
+    prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
-        if prev != red:
-            move, index = comp1.engine_suggest(depth=40)
+        if prev == black:
+            move, index, scr = comp1.basic_suggest()
             game.execute_single_move(move, index)
             prev = red
         else:
-            possible_mvs = comp1.non_empties(comp1._checkers.valid_moves(comp2._color))
+            possible_mvs = comp1.non_empties(comp1._checkers.valid_moves(black))
             move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
             game.execute_single_move(move, index)
             prev = black
-    if prev == red:
-        bot_wins += 1
-    else:
+    if game.is_done(red):
         rand_wins += 1
-    print(f"Engine won {bot_wins} games, random won {rand_wins} games")
+    else:
+        bot_wins += 1
+    print(f"bot won {bot_wins} games, random won {rand_wins} games")
 
-
-print(f"Engine won {bot_wins} games, random won {rand_wins} games")
 
 
 
