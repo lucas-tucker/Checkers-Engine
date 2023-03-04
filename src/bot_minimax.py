@@ -132,7 +132,9 @@ class Bot:
         played.
         """
         new_state = copy.deepcopy(board)
-        new_state.execute_single_move(mv, ind)
+        mv_copy = copy.deepcopy(mv)
+        ind_copy = copy.deepcopy(ind)
+        new_state.execute_single_move(mv_copy, ind_copy)
         return new_state
     
     def opposite_color(self, color):
@@ -193,6 +195,7 @@ for i in range(10):
     comp1 = Bot(game, red)
     prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
+        print(game)
         if prev == black:
             move, index = comp1.mini_max(depth=3)
             game.execute_single_move(move, index)
