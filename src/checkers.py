@@ -1,7 +1,7 @@
 """
 Checkers game logic.
 
-Current Status : TODO execute_move true-random
+Current Status : comments, docstring
 
 Author: Daniel Chen
 """
@@ -34,10 +34,23 @@ class Checkers:
         self._resigned = False
 
     def __str__(self):
+        """
+        Returns a string representation of the game, which
+        is just a string representation of the board.
+
+        Args: None
+        Returns: str
+        """
         return str(self._game_board)
 
 
     def get_board(self):
+        """
+        Returns the board.
+
+        Args: None
+        Returns: Board
+        """
         return self._game_board
 
     def valid_moves(self, piece_color):
@@ -215,18 +228,16 @@ class Checkers:
 
     def execute_move(self, move):
         """ 
-        Executes a move given a move tree. 
+        Executes a move given a move tree, randomly deciding which
+        of the children to follow.
         Turns a piece into a king if it is at the end of the board.
 
         Args:
             move : Move (tree of moves)
         
         Returns: None
-
-        NOT FIXED
         """
-        #test method - just execute the first move of the tree - will
-        #HAS TRUE RANDOM
+
         if move.can_execute():
             cur_move = move
             while bool(cur_move.children):
@@ -254,7 +265,15 @@ class Checkers:
             pass
     
     def make_random_move(self, piece_color):
-        """ Makes a random valid move given a piece's color."""
+        """
+        Makes a random valid move given a piece's color.
+
+        Args:
+            piece_color : Enum(PieceColor)
+        
+        Returns:
+            None
+        """
         move_list = self.valid_moves(piece_color)
         random.shuffle(move_list)
         if len(move_list) == 0:
@@ -269,6 +288,17 @@ class Checkers:
         self.execute_move(move_list[i])
 
     def execute_single_move(self, move, child):
+        """
+        Executes a single move given a move and a child index specifying
+        which of the children-moves the method will execute.
+
+        Args:
+            move: Move
+            child: int
+
+        Returns:
+            None
+        """
         moving_piece = move.location.piece
         move.children[child].location.piece = moving_piece
         move.location.piece = None
@@ -288,6 +318,18 @@ class Checkers:
                 moving_piece.is_king = True
     
     def execute_single_move_rand(self, move, child):
+        """
+        Executes a single move given a move and a child index specifying
+        which of the children-moves the method will execute. Then
+        randomly finishes the move from there.
+
+        Args:
+            move: Move
+            child: int
+
+        Returns:
+            None
+        """
         moving_piece = move.location.piece
         move.children[child].location.piece = moving_piece
         move.location.piece = None
@@ -307,6 +349,7 @@ class Checkers:
         if move.children[child].location.row == self._board_dim -1:
             if moving_piece.color.value == PieceColor.BLACK.value:
                 moving_piece.is_king = True
+
     def is_done(self, piece_color):
         """
         Returns if the game is done, i.e. someone has won.
@@ -333,7 +376,11 @@ class Checkers:
     
     def resign_game(self, piece_color):
         """
-        The player of piece_color resigns the game.
+        The player of piece_color resigns the game. The other
+        player is the winner.
+
+        Args:
+            piece_color: Enum(PieceColor)
 
         Returns:
             None
@@ -341,6 +388,12 @@ class Checkers:
         self._winner = opposite_color[piece_color]
 
     def draw_game(self):
+        """
+        The players draw the game. There is no winner.
+
+        Args: None
+        Returns: None
+        """
         self._resigned = True
         self._winner = None
 
@@ -351,6 +404,8 @@ class Board:
     _board_dim: int
     _size: int
     _winner: Optional[PieceColor]
+    _board_width: int
+    _board_height: int
 
     def __init__(self, size):
         """
