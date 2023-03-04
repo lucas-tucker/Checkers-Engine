@@ -10,11 +10,7 @@ from typing import Union
 
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
-#
-# Notes:
-# - exit() method in make_random_move class not defined
-# - running into error in line 274 of checkers.py code where
-# moving_piece is apparently a NoneType object
+# Current Win Rate: 80% (depth = 3, board size = 3)
 
 class Move_Tree:
     """
@@ -61,6 +57,7 @@ class Bot:
             worst_outcome = self.get_worst(tree, self._color)
             # Find tree with least worst possible outcome
             if worst_outcome >= worst:
+                worst = worst_outcome
                 best_mv = [tree.move, tree.index]
         return best_mv
    
@@ -89,8 +86,8 @@ class Bot:
         # Note that valid_moves returns Moves objects for each piece
         opp_mvs = board.valid_moves(opp_color)
         mvs = board.valid_moves(color)
-        king_dif = 2 * (self.king_tally(mvs) - self.king_tally(opp_mvs))
-        pieces_dif = len(mvs) - len(opp_mvs)
+        king_dif = self.king_tally(mvs) - self.king_tally(opp_mvs)
+        pieces_dif = 2 * (len(mvs) - len(opp_mvs))
         return king_dif + pieces_dif
 
     def king_tally(self, mvs):
@@ -195,13 +192,12 @@ for i in range(10):
     comp1 = Bot(game, red)
     prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
-        print(game)
         if prev == black:
             move, index = comp1.mini_max(depth=3)
             game.execute_single_move(move, index)
             prev = red
         else:
-            possible_mvs = comp1.non_empties(comp1._checkers.valid_moves(black))
+            possible_mvs = comp1.non_empties(game.valid_moves(black))
             move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
             game.execute_single_move(move, index)
             prev = black
