@@ -47,8 +47,9 @@ class Bot:
 
     def mini_max(self, depth):
         """
-        Given a depth level, this method assesses all possible moves and returns
-        the move-index pair which minimizes the worst-case outcome. 
+        Given a depth level, this method assesses all possible moves up to the
+        depth and returns the move-index pair which minimizes over worst-case
+        outcomes. 
         """
         # Get possible moves for this color
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
@@ -118,7 +119,7 @@ class Bot:
                     tree_list.append(Move_Tree(mv, ind, [], new_state))
                 else:
                     # Get all opponent's potential moves in this new state
-                    opp_mvs = self.non_empties(new_state.valid_moves(color))
+                    opp_mvs = self.non_empties(new_state.valid_moves(opp_color))
                     # Recursive call to make tree list for this move/ind's tree
                     opp_trees = self.get_trees(opp_mvs, opp_color, depth - 1, new_state)
                     tree_list.append(Move_Tree(mv, ind, opp_trees, new_state))
