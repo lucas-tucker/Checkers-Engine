@@ -193,15 +193,15 @@ def play_checkers(game):
             print(winner)
             
             font = pygame.font.Font('freesansbold.ttf', 32)
-		    if winner == PieceColor.BLACK:
-			    winstr='Black'
-            else
+            if winner == PieceColor.BLACK:
+                winstr='Black'
+            else:
                 winstr='Red'
 
-            text = font.render(winstr +'wins!', True, green, blue)
+            text = font.render(winstr +'wins!', True, Black, Red)
             textRect = text.get_rect()
             textRect.center = (WIDTH // 2, HEIGHT // 2)
-            display_surface.blit(text, textRect)
+            surface.blit(text, textRect)
 
 """
 board_size = 1
