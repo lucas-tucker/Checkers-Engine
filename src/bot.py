@@ -16,7 +16,6 @@ from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 # - running into error in line 274 of checkers.py code where
 # moving_piece is apparently a NoneType object
 
-
 class Bot:
     """
     Bot that chooses the move with the most points:
@@ -61,7 +60,7 @@ class Bot:
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
                 # Call helper method get_score
-                cur_score = self.get_score(self._color, mv, ind, self)
+                cur_score = self.get_score(self._color, mv, ind, self, possible_mvs)
                 if cur_score > high_score:
                     best_moves = {mv : [ind]}
                     high_score = cur_score
@@ -87,34 +86,40 @@ class Bot:
         cur_best = None
         for mv in possible_mvs:
             for ind in range(len(mv.children)):
-                cur_score = self.subgame_score(mv, ind, depth)
+                cur_score = self.subgame_score(mv, ind, depth, possible_mvs)
                 if cur_score > high_score:
                     high_score = cur_score
                     cur_best = (mv, ind)
         return cur_best
     
-    def get_score(self, color, mv, ind, bot):
+    def get_score(self, color, mv, ind, bot, possible_mvs):
         """
         Given a color, move, a corresponding index, and a bot, this method
         gets the score 
 
         Returns: (move, index) --> (Move, int)
         """
-        possible_mvs = bot.non_empties(bot._checkers.valid_moves(color))
         kinging_mvs = bot.kinging_moves(possible_mvs)
-        long_jump_mvs = self.longest_jump(possible_mvs)
-        center_mvs = self.center_moves(possible_mvs)
+        long_jump_mvs = bot.longest_jump(possible_mvs)
+        center_mvs = bot.center_moves(possible_mvs)
+
         # Add to score to incorporate all information
         score = 0
+        row = mv.location.row
         can_jump = bot._checkers.jump_moves(color)[1]
         if can_jump:
             score += 1
+            if mv in long_jump_mvs and ind in long_jump_mvs[mv]:
+                print(f"found long jump move {mv}")
+                score += 3
         if mv in kinging_mvs and ind in kinging_mvs[mv]:
+            print(f"found king move {mv}")
             score += 5
-        if mv in long_jump_mvs and ind in long_jump_mvs[mv]:
-            score += 3
         if mv in center_mvs and ind in center_mvs[mv]:
+            print(f"found center move {mv}")
             score += 1
+        if (row == 0 or row == self._checkers._board_dim - 1):
+            score -= 4
         return score
     
     def opposite_color(self, color):
@@ -122,7 +127,7 @@ class Bot:
             return PieceColor.BLACK
         return PieceColor.RED
 
-    def subgame_score(self, mv, ind, depth):
+    def subgame_score(self, mv, ind, depth, possible_mvs):
         """
         Given a move, a corresponding index, and a depth number, this method
         plays a game between two basic bots (using basic_suggest) depth-many
@@ -134,7 +139,7 @@ class Bot:
         # PROBLEM: deepcopy seems to not create a deep copy of the board state
         sub_game = copy.deepcopy(self._checkers)
         first_bot = Bot(sub_game, self._color)
-        score = self.get_score(self._color, mv, ind, first_bot)
+        score = self.get_score(self._color, mv, ind, first_bot, possible_mvs)
 
         print("SUBGAME 1")
         print(self._checkers)
@@ -202,7 +207,8 @@ class Bot:
 
         Returns: Dict(Move: [int])
         """
-        curr_max = 0 
+        # set max to 1 so we only get multi-jumps
+        curr_max = 1
         jump_dict = {}
         for mv in possible_mvs:
             # Get subtree height and corresponding indices for each Moves obj.
@@ -304,16 +310,14 @@ class Bot:
             ind : int
             center_dict : dict{Moves : list[int]}
         """
-        col = mv.location.col
         # Avoid moving pieces on the ends of the board
-        if (col > 0 and col < self._checkers._board_dim - 1):
-            curr_x = mv.location.col
-            potential_x = mv.children[child_ind].location.col
-            if self.is_toward_center(curr_x, potential_x):
-                if mv in center_dict:
-                    center_dict[mv].append(child_ind)
-                else:
-                    center_dict[mv] = [child_ind]
+        curr_x = mv.location.col
+        potential_x = mv.children[child_ind].location.col
+        if self.is_toward_center(curr_x, potential_x):
+            if mv in center_dict:
+                center_dict[mv].append(child_ind)
+            else:
+                center_dict[mv] = [child_ind]
 
     def kinging_moves(self, move_lst) -> dict:
         """ 
@@ -376,18 +380,28 @@ class Bot:
                 return True
         return False
     
-
 # Testing Code Below
 bot_wins = 0
 rand_wins = 0
 
-for i in range(100):
-    game = Checkers(4)
+for i in range(1):
+    game = Checkers(3)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
     prev = black
-    while (not game.is_done(red)) and (not game.is_done(black)):
+    j = 2
+    while (not game.is_done(red)) and (not game.is_done(black)) and j>0:
+        print(game)
+        j -= 1
+        print("THE COPY BEFORE EXECUTION: ")
+        cpy = copy.deepcopy(game)
+        print(cpy)
+        move, index, scr = comp1.basic_suggest()
+        cpy.execute_single_move(move, index)
+        print("THE COPY AFTER EXECUTION: ")
+        print(cpy)
+        break
         if prev == black:
             move, index, scr = comp1.basic_suggest()
             game.execute_single_move(move, index)
