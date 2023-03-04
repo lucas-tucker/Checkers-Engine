@@ -19,7 +19,7 @@ opposite_color[PieceColor.BLACK] = PieceColor.RED
 
 class Checkers:
     _game_board: object
-    board_dim: int
+    _board_dim: int
     _size: int
     _winner: Optional[PieceColor]
     consecutive_non_jump_moves: int
@@ -296,7 +296,7 @@ class Checkers:
                 move count exceded, False otherwise)
         """
         if self._resigned:
-            #game ends bc one player resigned
+            #game ends bc one player resigned or agreed to draw
             return True
         elif self.consecutive_non_jump_moves >= 80:
             #draw by 40-move rule
@@ -308,7 +308,7 @@ class Checkers:
             if move.can_execute():
                 return False
         #no executeable moves for piece_color
-        self._winner = opposite_color(piece_color)
+        self._winner = opposite_color[piece_color]
         return True
     
     def resign_game(self, piece_color):
@@ -318,7 +318,11 @@ class Checkers:
         Returns:
             None
         """
-        self._winner = opposite_color(piece_color)
+        self._winner = opposite_color[piece_color]
+
+    def draw_game(self):
+        self._resigned = True
+        self._winner = None
 
     
 
