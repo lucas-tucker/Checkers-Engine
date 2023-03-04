@@ -40,6 +40,8 @@ Background = Gray
 WIDTH = 600
 HEIGHT = 600
 
+crown = pygame.transform.scale(pygame.image.load('crown.png'),(44, 25))
+
 def draw_board(surface: pygame.surface.Surface, game, move=None):
     """
     Draws the state of the board in the window
@@ -88,7 +90,8 @@ def draw_board(surface: pygame.surface.Surface, game, move=None):
             if is_king:
                 king_radius = radius - (rh//6)
                 pygame.draw.circle(surface, color=king_color, center=center, radius=king_radius)
-    
+                surface.blit(crown, center[0], center[1])
+
     border_size = int(rh // 12)
     if move is not None:
         r = move.location.row
@@ -188,7 +191,18 @@ def play_checkers(game):
         if is_done:
             winner = opposite_color[current].name
             print(winner)
-            #draw some winner thing, stop the game
+            
+            font = pygame.font.Font('freesansbold.ttf', 32)
+		    if winner == PieceColor.BLACK:
+			    winstr='Black'
+            else
+                winstr='Red'
+
+            text = font.render(winstr +'wins!', True, green, blue)
+            textRect = text.get_rect()
+            textRect.center = (WIDTH // 2, HEIGHT // 2)
+            display_surface.blit(text, textRect)
+
 """
 board_size = 1
 c = Checkers(board_size)
