@@ -51,13 +51,13 @@ class Bot:
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         # Use get_trees to get list of trees corresponding to possible moves
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
-        worst = -math.inf
+        least_worst = -math.inf
         best_mv = None
         for tree in tree_list:
             worst_outcome = self.get_worst(tree, self._color)
             # Find tree with least worst possible outcome
-            if worst_outcome >= worst:
-                worst = worst_outcome
+            if worst_outcome >= least_worst:
+                least_worst = worst_outcome
                 best_mv = [tree.move, tree.index]
         return best_mv
    
