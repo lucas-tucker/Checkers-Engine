@@ -287,6 +287,26 @@ class Checkers:
             if moving_piece.color.value == PieceColor.BLACK.value:
                 moving_piece.is_king = True
     
+    def execute_single_move_rand(self, move, child):
+        moving_piece = move.location.piece
+        move.children[child].location.piece = moving_piece
+        move.location.piece = None
+        if move.children[child].dead_squares:
+            for dead_square in move.children[child].dead_squares:
+                dead_square.piece = None
+                self.consecutive_non_jump_moves = 0
+                #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
+        else:
+            self.consecutive_non_jump_moves += 1
+        if move.children[child].can_execute():
+            self.execute_move(move.children[child])
+        
+        if move.children[child].location.row == 0:
+            if moving_piece.color.value == PieceColor.RED.value:
+                moving_piece.is_king = True
+        if move.children[child].location.row == self._board_dim -1:
+            if moving_piece.color.value == PieceColor.BLACK.value:
+                moving_piece.is_king = True
     def is_done(self, piece_color):
         """
         Returns if the game is done, i.e. someone has won.

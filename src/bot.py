@@ -110,13 +110,13 @@ class Bot:
         if can_jump:
             score += 1
             if mv in long_jump_mvs and ind in long_jump_mvs[mv]:
-                print(f"found long jump move {mv}")
+                #print(f"found long jump move {mv}")
                 score += 3
         if mv in kinging_mvs and ind in kinging_mvs[mv]:
-            print(f"found king move {mv}")
+            #print(f"found king move {mv}")
             score += 5
         if mv in center_mvs and ind in center_mvs[mv]:
-            print(f"found center move {mv}")
+            #print(f"found center move {mv}")
             score += 1
         if (row == 0 or row == self._checkers._board_dim - 1):
             score -= 4
@@ -383,7 +383,7 @@ class Bot:
 # Testing Code Below
 bot_wins = 0
 rand_wins = 0
-
+"""
 for i in range(1):
     game = Checkers(3)
     black = PieceColor.BLACK
@@ -416,10 +416,36 @@ for i in range(1):
     else:
         bot_wins += 1
     print(f"bot won {bot_wins} games, random won {rand_wins} games")
+"""
 
 
-
-
+for i in range(1000):
+    game = Checkers(4)
+    black = PieceColor.BLACK
+    red = PieceColor.RED
+    comp1 = Bot(game, red) #bot is red
+    prev = black
+    while (not game.is_done(red)) and (not game.is_done(black)):
+        #print(game)
+        if prev == black:
+            move, index, scr = comp1.basic_suggest()
+            game.execute_single_move_rand(move, index)
+            prev = red
+        else:
+            #possible_mvs = comp1.non_empties(comp1._checkers.valid_moves(black))
+            #move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
+            #game.execute_single_move_rand(move, index)
+            game.make_random_move(black)
+            prev = black
+        #print(game)
+    if game.is_done(red) or game.is_done(black):
+        if game._winner == None:
+            pass
+        elif game._winner == red:
+            bot_wins+=1
+        else:
+            rand_wins += 1
+    print(f"bot won {bot_wins} games, random won {rand_wins} games")
 
 """  def simple_suggest(self) -> list[tuple[Moves, int], int]:
         #Best scoring seems to be 5, 3, 1
