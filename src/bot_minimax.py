@@ -10,7 +10,7 @@ from typing import Union
 
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
-# Current Win Rate: 80% (depth = 3, board size = 3)
+# Current Win Rate: 80% (depth = 2, board size = 3)
 
 class Move_Tree:
     """
@@ -51,31 +51,39 @@ class Bot:
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         # Use get_trees to get list of trees corresponding to possible moves
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
-        least_worst = -math.inf
+        best = -math.inf
         best_mv = None
         for tree in tree_list:
-            worst_outcome = self.get_worst(tree, self._color)
+            cur = self.get_minmax(tree, self._color, opp=True)
             # Find tree with least worst possible outcome
-            if worst_outcome >= least_worst:
-                least_worst = worst_outcome
+            if cur >= best:
+                best = cur
                 best_mv = [tree.move, tree.index]
         return best_mv
    
-    def get_worst(self, tree, color):
+    def get_minmax(self, tree, color, opp):
         """
-        Given a Move_Tree object and a color, this method determines the worst
-        possible outcome (given by an integer score) from this tree
+        Given a Move_Tree object and a color, this method determines maxmin 
+        value (given by an integer score) from this tree
         """
-        worst = math.inf
-        # Base case is that tree has no children, so we assess state here
+       # Base case is that tree has no children, so we assess state here
         if not(tree.opp_trees):
             return self.assess_state(tree.board_state, color)
-        for subtree in tree.opp_trees:
-            # Recursive call to get closer to the base case of tree leaves 
-            cur_worst = self.get_worst(subtree, color)
-            if cur_worst < worst:
-                worst = cur_worst
-        return worst
+        if not(opp):
+            min_max = -math.inf
+            for subtree in tree.opp_trees:
+                # Recursive call now for opponent's move
+                score = self.get_minmax(subtree, color, True)
+                if score > min_max:
+                    min_max = score
+        else:
+            min_max = math.inf
+            for subtree in tree.opp_trees:
+                # Recursive call for bot's move
+                score = self.get_minmax(subtree, color, False)
+                if score < min_max:
+                    min_max = score
+        return min_max
 
     def assess_state(self, board, color):
         """
@@ -185,15 +193,15 @@ class Bot:
 bot_wins = 0
 rand_wins = 0
 
-for i in range(10):
-    game = Checkers(3)
+for i in range(50):
+    game = Checkers(2)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
     prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
         if prev == black:
-            move, index = comp1.mini_max(depth=3)
+            move, index = comp1.mini_max(depth=4)
             game.execute_single_move(move, index)
             prev = red
         else:
@@ -201,6 +209,7 @@ for i in range(10):
             move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
             game.execute_single_move(move, index)
             prev = black
+    print(game)
     if game.is_done(red):
         rand_wins += 1
     else:
