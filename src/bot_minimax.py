@@ -13,7 +13,17 @@ from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 # Current Win Rates:
 # Depth 1: 75%
 # Depth 2: 95%
-# Depth 3+: 99%
+# Depth 3+: 99+%
+
+"""
+Source: https://www.ultraboardgames.com/checkers/tips.php
+Source suggests to crown kings and try to have more pieces than opponent.
+Therefore, min_max box optimizes for piece count and king count (with 2x 
+weight for piece count). 
+
+Sources consulted:
+https://www.youtube.com/watch?v=STjW3eH0Cik&t=1591s
+"""
 
 class Move_Tree:
     """
@@ -62,7 +72,7 @@ class Bot:
         best_mv = None
         for tree in tree_list:
             cur = self.get_minmax(tree, opp=True)
-            # Find tree with best possible outcome
+            # Find tree with best minmax value
             if cur >= best:
                 best = cur
                 best_mv = [tree.move, tree.index]
@@ -104,7 +114,7 @@ class Bot:
         Output: int
         """
         opp_color = self.opposite_color(self._color)
-        # Note that valid_moves returns Moves objects for each piece
+        # valid_moves returns Moves objects for each piece of the given color
         opp_mvs = board.valid_moves(opp_color)
         mvs = board.valid_moves(self._color)
         king_dif = self.king_tally(mvs) - self.king_tally(opp_mvs)
@@ -133,6 +143,7 @@ class Bot:
         
         Input: mvs (list[Moves]), color (PieceColor.color), depth (int),
         board (Checkers)
+
         Output: list[Move_Tree]
         """
         opp_color = self.opposite_color(color)
@@ -157,6 +168,8 @@ class Bot:
         played.
         """
         new_state = copy.deepcopy(board)
+        # Note that the Moves object inserted into execute_single_move needs to
+        # be a Moves object that belongs to the copied board
         mv_copy = self.copy_move_select(mv, new_state, color)
         new_state.execute_single_move(mv_copy, ind)
         return new_state
@@ -174,6 +187,10 @@ class Bot:
                 return cp
     
     def opposite_color(self, color):
+        """
+        Given a PieceColor Enum object, this method returns that of the opposite
+        color. 
+        """
         if color == PieceColor.RED:
             return PieceColor.BLACK
         return PieceColor.RED
@@ -225,7 +242,7 @@ bot_wins = 0
 rand_wins = 0
 
 for i in range(1000):
-    game = Checkers(3)
+    game = Checkers(2)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
@@ -244,4 +261,5 @@ for i in range(1000):
         rand_wins += 1
     else:
         bot_wins += 1
+    print(game)
     print(f"bot won {bot_wins} games, random won {rand_wins} games")
