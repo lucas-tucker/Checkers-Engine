@@ -10,7 +10,7 @@ from typing import Union
 
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
-# Current Win Rate: 80% (depth = 3, board size = 3)
+# Current Win Rate: 100%?!
 
 class Move_Tree:
     """
@@ -51,41 +51,49 @@ class Bot:
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         # Use get_trees to get list of trees corresponding to possible moves
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
-        least_worst = -math.inf
+        best = -math.inf
         best_mv = None
         for tree in tree_list:
-            worst_outcome = self.get_worst(tree, self._color)
-            # Find tree with least worst possible outcome
-            if worst_outcome >= least_worst:
-                least_worst = worst_outcome
+            cur = self.get_minmax(tree, opp=True)
+            # Find tree with best possible outcome
+            if cur >= best:
+                best = cur
                 best_mv = [tree.move, tree.index]
         return best_mv
    
-    def get_worst(self, tree, color):
+    def get_minmax(self, tree, opp):
         """
-        Given a Move_Tree object and a color, this method determines the worst
-        possible outcome (given by an integer score) from this tree
+        Given a Move_Tree object and a color, this method determines maxmin 
+        value (given by an integer score) from this tree
         """
-        worst = math.inf
-        # Base case is that tree has no children, so we assess state here
+       # Base case is that tree has no children, so we assess state here
         if not(tree.opp_trees):
-            return self.assess_state(tree.board_state, color)
-        for subtree in tree.opp_trees:
-            # Recursive call to get closer to the base case of tree leaves 
-            cur_worst = self.get_worst(subtree, color)
-            if cur_worst < worst:
-                worst = cur_worst
-        return worst
+            return self.assess_state(tree.board_state)
+        if not(opp):
+            min_max = -math.inf
+            for subtree in tree.opp_trees:
+                # Recursive call now for opponent's move
+                score = self.get_minmax(subtree, True)
+                if score > min_max:
+                    min_max = score
+        else:
+            min_max = math.inf
+            for subtree in tree.opp_trees:
+                # Recursive call for bot's move
+                score = self.get_minmax(subtree, False)
+                if score < min_max:
+                    min_max = score
+        return min_max
 
-    def assess_state(self, board, color):
+    def assess_state(self, board):
         """
         Given a board and a color, this method returns an assessment (int) of 
         the board from the standpoint of king and piece counts. 
         """
-        opp_color = self.opposite_color(color)
+        opp_color = self.opposite_color(self._color)
         # Note that valid_moves returns Moves objects for each piece
         opp_mvs = board.valid_moves(opp_color)
-        mvs = board.valid_moves(color)
+        mvs = board.valid_moves(self._color)
         king_dif = self.king_tally(mvs) - self.king_tally(opp_mvs)
         pieces_dif = 2 * (len(mvs) - len(opp_mvs))
         return king_dif + pieces_dif
@@ -111,7 +119,7 @@ class Bot:
         tree_list = []
         for mv in mvs:
             for ind, child in enumerate(mv.children):
-                new_state = self.simulate_move(board, mv, ind)
+                new_state = self.simulate_move(board, mv, ind, color)
                 if depth == 0:
                     tree_list.append(Move_Tree(mv, ind, [], new_state))
                 else:
@@ -122,17 +130,25 @@ class Bot:
                     tree_list.append(Move_Tree(mv, ind, opp_trees, new_state))
         return tree_list
     
-    def simulate_move(self, board, mv, ind):
+    def simulate_move(self, board, mv, ind, color):
         """
         Given a board, move and index, this method returns a new board state
         (a Checkers object) corresponding to if that move-index were to be 
         played.
         """
         new_state = copy.deepcopy(board)
-        mv_copy = copy.deepcopy(mv)
-        ind_copy = copy.deepcopy(ind)
-        new_state.execute_single_move(mv_copy, ind_copy)
+        mv_copy = self.copy_move_select(mv, new_state, color)
+        new_state.execute_single_move(mv_copy, ind)
         return new_state
+    
+
+    def copy_move_select(self, mv, copied_state, color):
+        row = mv.location.row
+        col = mv.location.col
+        copy_mvs = self.non_empties(copied_state.valid_moves(color))
+        for cp in copy_mvs:
+            if cp.location.row == row and cp.location.col == col:
+                return cp
     
     def opposite_color(self, color):
         if color == PieceColor.RED:
@@ -185,15 +201,15 @@ class Bot:
 bot_wins = 0
 rand_wins = 0
 
-for i in range(10):
-    game = Checkers(3)
+for i in range(50):
+    game = Checkers(2)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
     prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
         if prev == black:
-            move, index = comp1.mini_max(depth=3)
+            move, index = comp1.mini_max(depth=4)
             game.execute_single_move(move, index)
             prev = red
         else:
@@ -201,6 +217,7 @@ for i in range(10):
             move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
             game.execute_single_move(move, index)
             prev = black
+    print(game)
     if game.is_done(red):
         rand_wins += 1
     else:
