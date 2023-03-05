@@ -10,12 +10,16 @@ from typing import Union
 
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
-# Current Win Rate: 100%?!
+# Current Win Rates:
+# Depth 1: 75%
+# Depth 2: 95%
+# Depth 3+: 99%
 
 class Move_Tree:
     """
     Trees for individual move-index pairs that represent all potential game
-    continuations.
+    continuations, with opp_trees as the subsequent move trees for the 
+    opponent. 
     """
     def __init__(self, mv, ind, opp_trees, board_state):
         self.move = mv
@@ -46,6 +50,9 @@ class Bot:
         Given a depth level, this method assesses all possible moves up to the
         depth and returns the move-index pair which minimizes over worst-case
         outcomes. 
+
+        Input: depth (int)
+        Output: list[Moves, int]
         """
         # Get possible moves for this color
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
@@ -65,6 +72,9 @@ class Bot:
         """
         Given a Move_Tree object and a color, this method determines maxmin 
         value (given by an integer score) from this tree
+
+        Input: tree (Move_Tree), opp (bool)
+        Output: min_max (int)
         """
        # Base case is that tree has no children, so we assess state here
         if not(tree.opp_trees):
@@ -73,14 +83,14 @@ class Bot:
             min_max = -math.inf
             for subtree in tree.opp_trees:
                 # Recursive call now for opponent's move
-                score = self.get_minmax(subtree, True)
+                score = self.get_minmax(subtree, opp=True)
                 if score > min_max:
                     min_max = score
         else:
             min_max = math.inf
             for subtree in tree.opp_trees:
                 # Recursive call for bot's move
-                score = self.get_minmax(subtree, False)
+                score = self.get_minmax(subtree, opp=False)
                 if score < min_max:
                     min_max = score
         return min_max
@@ -89,6 +99,9 @@ class Bot:
         """
         Given a board and a color, this method returns an assessment (int) of 
         the board from the standpoint of king and piece counts. 
+
+        Input: board (Checkers)
+        Output: int
         """
         opp_color = self.opposite_color(self._color)
         # Note that valid_moves returns Moves objects for each piece
@@ -102,6 +115,9 @@ class Bot:
         """
         Given a list of move objects, this method returns the total number which
         correspond to king pieces.
+
+        Input: mvs (list[Moves])
+        Output: int
         """
         tally = 0
         for mv in mvs:
@@ -114,6 +130,10 @@ class Bot:
         Given a list of possible moves, a color, depth, and board, this method
         returns a tree list (one tree per move-index pair of the mvs list)
         corresponding to potential game continuations.
+        
+        Input: mvs (list[Moves]), color (PieceColor.color), depth (int),
+        board (Checkers)
+        Output: list[Move_Tree]
         """
         opp_color = self.opposite_color(color)
         tree_list = []
@@ -140,9 +160,12 @@ class Bot:
         mv_copy = self.copy_move_select(mv, new_state, color)
         new_state.execute_single_move(mv_copy, ind)
         return new_state
-    
 
     def copy_move_select(self, mv, copied_state, color):
+        """
+        Given a copied board, a Moves object, and a color, this method returns
+        the equivalent Moves object in the copied board. 
+        """
         row = mv.location.row
         col = mv.location.col
         copy_mvs = self.non_empties(copied_state.valid_moves(color))
@@ -201,8 +224,8 @@ class Bot:
 bot_wins = 0
 rand_wins = 0
 
-for i in range(50):
-    game = Checkers(2)
+for i in range(1000):
+    game = Checkers(3)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
@@ -217,7 +240,6 @@ for i in range(50):
             move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
             game.execute_single_move(move, index)
             prev = black
-    print(game)
     if game.is_done(red):
         rand_wins += 1
     else:
