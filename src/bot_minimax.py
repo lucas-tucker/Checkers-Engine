@@ -16,12 +16,12 @@ from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 # Depth 3+: 99+%
 
 """
-Source: https://www.ultraboardgames.com/checkers/tips.php
-Source suggests to crown kings and try to have more pieces than opponent.
-Therefore, min_max box optimizes for piece count and king count (with 2x 
-weight for piece count). 
+Strategy source: https://www.ultraboardgames.com/checkers/tips.php
+Strategy source suggests to crown kings and try to have more pieces than 
+opponent. Therefore, min_max box optimizes for piece count and king count
+(with 2x weight for piece count). 
 
-Sources consulted:
+Source consulted for minimax logic implementation:
 https://www.youtube.com/watch?v=STjW3eH0Cik&t=1591s
 """
 
@@ -238,16 +238,17 @@ class Bot:
         return [rand_mv, rand_child]
     
 # Testing Code Below
-bot_wins = 0
+""" bot_wins = 0
 rand_wins = 0
 
-for i in range(1000):
-    game = Checkers(2)
+for i in range(1):
+    game = Checkers(3)
     black = PieceColor.BLACK
     red = PieceColor.RED
     comp1 = Bot(game, red)
     prev = black
     while (not game.is_done(red)) and (not game.is_done(black)):
+        print(game)
         if prev == black:
             move, index = comp1.mini_max(depth=4)
             game.execute_single_move(move, index)
@@ -262,4 +263,4 @@ for i in range(1000):
     else:
         bot_wins += 1
     print(game)
-    print(f"bot won {bot_wins} games, random won {rand_wins} games")
+    print(f"bot won {bot_wins} games, random won {rand_wins} games") """
