@@ -1,12 +1,15 @@
 """
-Bots for Connect-M
+Bots for Checkers
 
 (and command for running simulations with bots)
+
+Author: Lucas Tucker
 """
 import random
 import copy
 import math
 from typing import Union
+import click
 
 from checkers import Checkers, Board, Piece, Moves, Square, PieceColor
 
@@ -37,7 +40,7 @@ class Move_Tree:
         self.opp_trees = opp_trees
         self.board_state = board_state
 
-class Bot:
+class SmartBot:
     """
     Minimax bot
     """
@@ -45,7 +48,7 @@ class Bot:
     _checkers: Checkers
     _color: PieceColor
 
-    def __init__(self, checkers: Checkers, color: PieceColor):
+    def __init__(self, checkers, color, opponent_color, depth=3):
         """ Constructor
 
         Args:
@@ -54,17 +57,19 @@ class Bot:
         """
         self._checkers = checkers
         self._color = color
+        self._depth = depth
+        self._oppcolor = opponent_color
 
-    def mini_max(self, depth):
+    def suggest_move(self):
         """
-        Given a depth level, this method assesses all possible moves up to the
-        depth and returns the move-index pair which minimizes over worst-case
-        outcomes. 
+        This method assesses all possible moves up to the depth and returns the
+        move-index pair with the optimal min max outcome. 
 
         Input: depth (int)
         Output: list[Moves, int]
         """
         # Get possible moves for this color
+        depth = self._depth
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
         # Use get_trees to get list of trees corresponding to possible moves
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
@@ -113,7 +118,7 @@ class Bot:
         Input: board (Checkers)
         Output: int
         """
-        opp_color = self.opposite_color(self._color)
+        opp_color = self._oppcolor
         # valid_moves returns Moves objects for each piece of the given color
         opp_mvs = board.valid_moves(opp_color)
         mvs = board.valid_moves(self._color)
@@ -236,31 +241,200 @@ class Bot:
         rand_mv = random.choice(list(move_dict.items()))[0]
         rand_child = random.choice(move_dict[rand_mv])
         return [rand_mv, rand_child]
+
+class RandomBot:
+    def __init__(self, checkers, color):
+        self._checkers = checkers
+        self._color = color
+
+    def suggest_move(self):
+        game = self._checkers
+        possible_mvs = self.non_empties(game.valid_moves(self._color))
+        return self.find_rand(self.to_dict(possible_mvs))
+
+    def find_rand(self, move_dict):
+        """ 
+        Given a dictionary which maps Moves to lists of child indices, this
+        method returns a random Move-index tuple corresponding to one move on
+        the board. 
+
+        Args:
+            move_dict: dict{Moves: list[int]}
+        
+        Returns:
+            (Moves, int)
+        """
+        rand_mv = random.choice(list(move_dict.items()))[0]
+        rand_child = random.choice(move_dict[rand_mv])
+        return [rand_mv, rand_child]
     
+    def non_empties(self, mvs):
+        """
+        Given a list of Moves objects, each corresponding to a piece of the
+        bot's color, this method returns a new list of those Moves objects with
+        nonempty children (all valid moves). 
+
+        Returns: list[Moves]
+        """
+        non_empty_lst = []
+        for mv in mvs:
+            if mv.children:
+                non_empty_lst.append(mv)
+        return non_empty_lst
+
+    def to_dict(self, mvs_lst):
+        """
+        Given a list of Moves objects, this method returns a dictionary which 
+        maps each Moves object to its children. 
+
+        Returns: dict{Moves : list[int]}
+        """
+        mv_dict = {}
+        for mv in mvs_lst:
+            mv_dict[mv] = list(range(len(mv.children)))
+        return mv_dict
+
+class BotPlayer:
+    """
+    Simple class to store information about a
+    bot player in a simulation.
+    """
+
+    name: str
+    bot: Union[RandomBot, SmartBot]
+    color: PieceColor
+    wins: int
+
+    def __init__(self, name: str, board: Checkers, color: PieceColor,
+                 opponent_color: PieceColor, depth):
+        """ Constructor
+        Args:
+            name: Name of the bot
+            board: Board to play on
+            color: Bot's color
+            opponent_color: Opponent's color
+        """
+        self.name = name
+
+        if self.name == "random":
+            self.bot = RandomBot(board, color)
+        elif self.name == "smart":
+            self.bot = SmartBot(board, color, opponent_color, depth)
+        self.color = color
+        self.wins = 0
+
+
+def simulate(game: Checkers, n: int, bots, dim: int) -> None:
+    """ Simulates multiple games between two bots
+    Args:
+        board: The board on whch to play
+        n: The number of games to play
+        bots: Dictionary mapping piece colors to Player objects (the bots that 
+        will play one another)
+        dim: Board is of dimensions (2*(dim) + 2) x (2*(dim) + 2)
+    Returns: None
+    """
+    for i in range(n):
+        game = Checkers(dim)
+        bots[PieceColor.RED].bot._checkers = game
+        bots[PieceColor.BLACK].bot._checkers = game
+        # NEED TO IMPLEMENT
+        #game.reset() 
+        current = bots[PieceColor.RED]
+        while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
+            # Get corresponding bot's move to play
+            move, index = current.bot.suggest_move()
+            game.execute_single_move(move, index)
+
+            # Alternate turns by switching bots
+            if current.color == PieceColor.BLACK:
+                current = bots[PieceColor.RED]
+            elif current.color == PieceColor.RED:
+                current = bots[PieceColor.BLACK]
+        
+        # Get the winner from the Checkers object
+        winner = game._winner
+        if winner is not None:
+            bots[winner].wins += 1
+
+
+@click.command(name="Checkers Bot")
+@click.option('-n', '--num-games', type=click.INT, default=100)
+@click.option('--player1',
+              type=click.Choice(['random', 'smart'], case_sensitive=False),
+              default="random")
+@click.option('--player2',
+              type=click.Choice(['random', 'smart'], case_sensitive=False),
+              default="random")
+@click.option('--depth1', type=click.INT, default=3)
+@click.option('--depth2', type=click.INT, default=3)
+@click.option('--board_size', type=click.INT, default=3)
+
+def cmd(num_games, player1, player2, depth1, depth2, board_size):
+    # Remove this code if TUI/GUI work
+    print("")
+    print("Hello. In this mode only bots can be played against one another.")
+    print("Note that you will be prompted for the depths of both bots,")
+    print("and this number is disregarded in the case of a random bot.")
+    print("")
+    num_games = int(input("Enter the number of games you want the bots to play (integer): "))
+    player1 = input("Enter 'random' or 'smart' for player 1: ")
+    depth1 = int(input("Enter player 1 depth (integer): "))
+    player2 = input("Enter 'random' or 'smart' for player 2: ")
+    depth2 = int(input("Enter player 2 depth (integer): "))
+    board_size = int(input("Enter integer n for board size (2n + 2)x(2n + 2): "))
+    print("")
+    print("Playing games... (depth 3+ can take a bit)")
+    print("")
+
+    board = Checkers(board_size)
+    bot1 = BotPlayer(player1, board, PieceColor.RED, PieceColor.BLACK, depth1)
+    bot2 = BotPlayer(player2, board, PieceColor.BLACK, PieceColor.RED, depth2)
+
+    bots = {PieceColor.RED: bot1, PieceColor.BLACK: bot2}
+
+    simulate(board, num_games, bots, board_size)
+
+    bot1_wins = bots[PieceColor.RED].wins
+    bot2_wins = bots[PieceColor.BLACK].wins
+    ties = num_games - (bot1_wins + bot2_wins)
+
+    print(f"Bot 1 ({player1}) wins: {100 * bot1_wins / num_games:.2f}%")
+    print(f"Bot 2 ({player2}) wins: {100 * bot2_wins / num_games:.2f}%")
+    print(f"Ties: {100 * ties / num_games:.2f}%")
+
+
+if __name__ == "__main__":
+    cmd()
+
+"""  
 # Testing Code Below
-""" bot_wins = 0
+bot_wins = 0
 rand_wins = 0
 
 for i in range(1):
     game = Checkers(3)
     black = PieceColor.BLACK
     red = PieceColor.RED
-    comp1 = Bot(game, red)
-    prev = black
+    smart = SmartBot(game, red, black, 3)
+    rand = RandomBot(game, black)
+    bots = {red: smart, black: rand}
+    curr = smart
+
     while (not game.is_done(red)) and (not game.is_done(black)):
         print(game)
-        if prev == black:
-            move, index = comp1.mini_max(depth=4)
-            game.execute_single_move(move, index)
-            prev = red
+        move, index = curr.suggest_move()
+        game.execute_single_move(move, index)
+
+        if curr == bots[red]:
+            curr = bots[black]
         else:
-            possible_mvs = comp1.non_empties(game.valid_moves(black))
-            move, index = comp1.choose_rand(comp1.to_dict(possible_mvs))
-            game.execute_single_move(move, index)
-            prev = black
+            curr = bots[red]
     if game.is_done(red):
         rand_wins += 1
     else:
         bot_wins += 1
     print(game)
-    print(f"bot won {bot_wins} games, random won {rand_wins} games") """
+    print(f"bot won {bot_wins} games, random won {rand_wins} games")
+"""
+
