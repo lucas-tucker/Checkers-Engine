@@ -185,10 +185,10 @@ class SmartBot:
         Output: new_state (Checkers)
         """
         new_state = copy.deepcopy(board)
-        # Note that the Moves object inserted into execute_single_move needs to
-        # be a Moves object that belongs to the copied board
+        # Note that the Moves object inserted into execute_single_move_rand 
+        # needs to be a Moves object that belongs to the copied board
         mv_copy = self.copy_move_select(mv, new_state, color)
-        new_state.execute_single_move(mv_copy, ind)
+        new_state.execute_single_move_rand(mv_copy, ind)
         return new_state
 
     def copy_move_select(self, mv, copied_state, color):
@@ -359,7 +359,7 @@ def simulate(game: Checkers, n: int, bots, dim: int) -> None:
         while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
             # Get corresponding bot's move to play
             move, index = current.bot.suggest_move()
-            game.execute_single_move(move, index)
+            game.execute_single_move_rand(move, index)
 
             # Alternate turns by switching bots
             if current.color == PieceColor.BLACK:
