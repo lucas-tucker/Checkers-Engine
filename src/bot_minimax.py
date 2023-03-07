@@ -214,34 +214,6 @@ class SmartBot:
                 non_empty_lst.append(mv)
         return non_empty_lst
 
-    def to_dict(self, mvs_lst):
-        """
-        Given a list of Moves objects, this method returns a dictionary which 
-        maps each Moves object to its children. 
-
-        Returns: dict{Moves : list[int]}
-        """
-        mv_dict = {}
-        for mv in mvs_lst:
-            mv_dict[mv] = list(range(len(mv.children)))
-        return mv_dict
-
-    def choose_rand(self, move_dict):
-        """ 
-        Given a dictionary which maps Moves to lists of child indices, this
-        method returns a random Move-index tuple corresponding to one move on
-        the board. 
-
-        Args:
-            move_dict: dict{Moves: list[int]}
-        
-        Returns:
-            (Moves, int)
-        """
-        rand_mv = random.choice(list(move_dict.items()))[0]
-        rand_child = random.choice(move_dict[rand_mv])
-        return [rand_mv, rand_child]
-
 class RandomBot:
     def __init__(self, checkers, color):
         self._checkers = checkers
