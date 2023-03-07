@@ -430,6 +430,7 @@ class Checkers:
         Returns:
             None
         """
+        self._resigned = True
         self._winner = opposite_color[piece_color]
 
     def draw_game(self):
@@ -441,6 +442,15 @@ class Checkers:
         """
         self._resigned = True
         self._winner = None
+
+    def get_winner(self):
+        """
+        Returns self._winner.
+
+        Args: None
+        Returns: self._winner.
+        """
+        return self._winner
 
     def _populate(self):
         """ 

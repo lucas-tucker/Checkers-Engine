@@ -46,5 +46,10 @@ plays first: see
 [American Checkers](https://en.wikipedia.org/wiki/Checkers#No_flying_kings;_men_cannot_capture_backwards). 
 As such, we have black play first as well.
 
-Currently, we have not integrated the bot. 
+To play two bots against each other, run
 
+    python3 src/bot_minimax.py
+
+You will be prompted with instructions on how to play the two bots against one
+another (random, smart, depth, number of games) and you will recieve the 
+game outcomes as percentage scores.
