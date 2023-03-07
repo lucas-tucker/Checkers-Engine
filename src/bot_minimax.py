@@ -35,6 +35,11 @@ class Move_Tree:
     opponent. 
     """
     def __init__(self, mv, ind, opp_trees, board_state):
+        """
+        Constructor with:
+        mv (Moves); ind (int); opp_trees (list[Move_Tree]);
+        board_state (Checkers)
+        """
         self.move = mv
         self.index = ind
         self.opp_trees = opp_trees
@@ -44,16 +49,20 @@ class SmartBot:
     """
     Minimax bot
     """
-
     _checkers: Checkers
     _color: PieceColor
 
-    def __init__(self, checkers, color, opponent_color, depth=3):
-        """ Constructor
+    def __init__(self, checkers, color, opponent_color, depth):
+        """ 
+        Constructor that consumes checkers (Checkers object bot will use),
+        color (PieceColor attribute of bot), opponent_color (PieceColor attr. of
+        opponent player), and depth (depth of bot). 
 
         Args:
-            checkers: Checkers object the bot will use as guide
-            color: Bot's color
+            checkers: Checkers
+            color: PieceColor attribute
+            opponent_color: PieceColor attribute
+            depth: int
         """
         self._checkers = checkers
         self._color = color
@@ -171,6 +180,9 @@ class SmartBot:
         Given a board, move and index, this method returns a new board state
         (a Checkers object) corresponding to if that move-index were to be 
         played.
+
+        Input: board (Checkers); mv (Moves); ind (int); color (PieceColor attr.)
+        Output: new_state (Checkers)
         """
         new_state = copy.deepcopy(board)
         # Note that the Moves object inserted into execute_single_move needs to
@@ -183,11 +195,15 @@ class SmartBot:
         """
         Given a copied board, a Moves object, and a color, this method returns
         the equivalent Moves object in the copied board. 
+
+        Input: mv (Moves); copied_state (Checkers); color (PieceColor attribute)
+        Output: cp (Moves)
         """
         row = mv.location.row
         col = mv.location.col
         copy_mvs = self.non_empties(copied_state.valid_moves(color))
         for cp in copy_mvs:
+            # Find equivalent Moves object
             if cp.location.row == row and cp.location.col == col:
                 return cp
     
@@ -195,6 +211,9 @@ class SmartBot:
         """
         Given a PieceColor Enum object, this method returns that of the opposite
         color. 
+
+        Input: color (PieceColor attribute)
+        Output: PieceColor attribute
         """
         if color == PieceColor.RED:
             return PieceColor.BLACK
@@ -204,7 +223,7 @@ class SmartBot:
         """
         Given a list of Moves objects, each corresponding to a piece of the
         bot's color, this method returns a new list of those Moves objects with
-        nonempty children (all valid moves). 
+        nonempty children (to yield playable moves). 
 
         Returns: list[Moves]
         """
@@ -220,6 +239,17 @@ class RandomBot:
         self._color = color
 
     def suggest_move(self):
+        """ 
+        Given a dictionary which maps Moves to lists of child indices, this
+        method returns a random Move-index list corresponding to one move on
+        the board. 
+
+        Input:
+            move_dict: dict{Moves: list[int]}
+        
+        Returns:
+            list[Moves, int]
+        """
         game = self._checkers
         possible_mvs = self.non_empties(game.valid_moves(self._color))
         return self.find_rand(self.to_dict(possible_mvs))
@@ -230,7 +260,7 @@ class RandomBot:
         method returns a random Move-index tuple corresponding to one move on
         the board. 
 
-        Args:
+        Input:
             move_dict: dict{Moves: list[int]}
         
         Returns:
@@ -246,6 +276,7 @@ class RandomBot:
         bot's color, this method returns a new list of those Moves objects with
         nonempty children (all valid moves). 
 
+        Input: mvs (list[Moves])
         Returns: list[Moves]
         """
         non_empty_lst = []
@@ -271,7 +302,6 @@ class BotPlayer:
     Simple class to store information about a
     bot player in a simulation.
     """
-
     name: str
     bot: Union[RandomBot, SmartBot]
     color: PieceColor
@@ -298,8 +328,8 @@ class BotPlayer:
 
 def simulate(game: Checkers, n: int, bots, dim: int) -> None:
     """ Simulates multiple games between two bots
-    Args:
-        board: The board on whch to play
+    Input:
+        board: The board on which to play
         n: The number of games to play
         bots: Dictionary mapping piece colors to Player objects (the bots that 
         will play one another)
@@ -310,8 +340,8 @@ def simulate(game: Checkers, n: int, bots, dim: int) -> None:
         game = Checkers(dim)
         bots[PieceColor.RED].bot._checkers = game
         bots[PieceColor.BLACK].bot._checkers = game
-        # NEED TO IMPLEMENT
-        #game.reset() 
+        # When reset function implemented code here is more efficient
+        # game.reset() 
         current = bots[PieceColor.RED]
         while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
             # Get corresponding bot's move to play
