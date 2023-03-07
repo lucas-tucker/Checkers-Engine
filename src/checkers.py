@@ -27,11 +27,12 @@ class Checkers:
 
     def __init__(self, size):
         self._size = size
-        self._game_board = Board(size)
         self._board_dim = 2*size+2
+        self._game_board = Board(self._board_dim, self._board_dim)
         self._winner = None
         self.consecutive_non_jump_moves = 0
         self._resigned = False
+        self._populate()
 
     def __str__(self):
         """
@@ -397,47 +398,31 @@ class Checkers:
         self._resigned = True
         self._winner = None
 
-    
-
-class Board:
-    board: List[List[Optional[PieceColor]]]
-    _board_dim: int
-    _size: int
-    _winner: Optional[PieceColor]
-    _board_width: int
-    _board_height: int
-
-    def __init__(self, size):
-        """
-        Constructor
-
-        Args:
-            size (int) : no. of rows of pieces
-        """
-        self._size = size
-        self._board_dim = 2*size+2
-        self.board = [[None]*self._board_dim for _ in range(self._board_dim)]
-        self._winner = None
-        self._populate()
-        
     def _populate(self):
-        """ Populates the board with squares containing pieces and pieces."""
+        """ 
+        Populates the board with squares containing pieces and pieces.
+        Additionally, it resets the board to a starting state if called.
+        
+        Args: None
+        Returns: None
+        """
         #1st loop - populate board
         for i in range(self._board_dim): #row
             for j in range(self._board_dim): #col
-                self.board[i][j] = Square(i,j, None)
                 if (i+j) % 2 == 1:
                     if i < self._size:
-                        self.board[i][j].piece = Piece(PieceColor.BLACK)
-                
-                    if i > self._size+1:
-                        self.board[i][j].piece = Piece(PieceColor.RED)
+                        self.get_board().board[i][j].piece = Piece(PieceColor.BLACK)
+                    elif i > self._size+1:
+                        self.get_board().board[i][j].piece = Piece(PieceColor.RED)
+                    else:
+                        self.get_board().board[i][j].piece = None
+                    
         #2nd loop - connections
         dirs = {"NW" : (-1, -1),          "NE" : (-1, +1),
 
                 "SW" : (+1, -1),          "SE" : (+1, +1)}
  
-        for row in self.board:
+        for row in self.get_board().board:
             for square in row:
                 if (square.row + square.col) % 2 == 1:
                     for dir in dirs:
@@ -447,8 +432,37 @@ class Board:
                         target_row = cur_row+dr
                         target_col = cur_col+dc
                         if 0 <= target_row < self._board_dim and 0 <= target_col < self._board_dim:
-                            square.neighbors[dir] = self.board[target_row][target_col]
-                            #self.board[target_row][target_col].neighbors[opposite[dir]] = square
+                            square.neighbors[dir] = self.get_board().board[target_row][target_col]
+    
+
+class Board:
+    board: List[List[Optional[PieceColor]]]
+    #_board_dim: int
+    #_size: int
+    _winner: Optional[PieceColor]
+    _board_width: int
+    _board_height: int
+
+    def __init__(self, width, height):
+        """
+        Constructor
+
+        Args:
+            size (int) : no. of rows of pieces
+        """
+        #self._size = size
+        #self._board_dim = 2*size+2
+        self._board_width = width
+        self._board_height = height
+        self.board = [[None]*self._board_width for _ in range(self._board_height)]
+        self._winner = None
+        self._populate()
+
+    def _populate(self):
+        for i in range(self._board_height): #row
+            for j in range(self._board_width): #col
+                self.board[i][j] = Square(i,j, None)
+            
 
     def __str__(self) -> str:
         """
@@ -568,10 +582,12 @@ class Moves:
     
     def can_execute(self):
         return bool(self.children) #shortcut to say  
+"""
 board_size = 3
-c = Checkers(board_size)
+c = Checkers(board_size, board_size)
 BLACK = c.get_board().board[0][1].piece.color
 RED = c.get_board().board[2*board_size+1][0].piece.color
+"""
 
 """
 for i in range(100):
