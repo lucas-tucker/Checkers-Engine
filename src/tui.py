@@ -13,6 +13,7 @@ from typing import Union, Dict
 import time
 
 from checkers import Checkers, Board, Square, Piece, Moves, PieceColor
+#from bot import Bot 
 from rich.console import Console
 from enum import Enum
 
@@ -36,13 +37,13 @@ class ExitError(Exception):
     """
     pass
 
-def select_piece(game, color):
+def select_piece(game, color, is_bot=False, player_2_is_bot=False):
     """
     At the start of a players move they must select a piece to then move.
 
     Returns : list [possible moves for selected piece, piece color]
     """
-    if False: #self.bot is not None:
+    if is_bot: #self.bot is not None:
         pass
     else:
         num_input_error = 0
@@ -62,6 +63,20 @@ def select_piece(game, color):
                 if v == "exit":
                     # If player types exit, raise an error to end the game.
                     raise ExitError
+                if v == "draw":
+                    # If a player types draw, prompt a draw acceptance.
+                    if player_2_is_bot:
+                        return 'draw'
+                    else:
+                        console.print("Type [lime]'yes'[/lime] to accept, [red]'no'[/red] to refuse")
+                        v2 = input("Do you accept?>")
+                        if v2 == "yes":
+                            return 'draw'
+                        else:
+                            continue
+                if v == "resign":
+                    return 'resign'
+
                 out = v.split('|')
                 col = ALP_INT[out[0]]
                 row = int(out[1])
@@ -97,7 +112,7 @@ def select_piece(game, color):
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
                 num_input_error += 1
     
-def do_move(moves, color, game):
+def do_move(moves, color, game, is_bot=False):
     """
     Gets a move from the current player.
     
@@ -109,8 +124,10 @@ def do_move(moves, color, game):
 
     Returns: None
     """
-    if False: # bot is not None:
-        pass
+    if is_bot: # bot is not None:
+        
+        move, index = comp1.suggest_move()[0]
+        game.execute_single_move(move, index)
     else:
         while moves[2].can_execute():
             # The move is not finished until the move class instance (moves[2])
@@ -303,8 +320,11 @@ def play_checkers(game: Checkers, player1_is_bot=False, player2_is_bot=False) ->
             TUIPlayer objects.
     Returns: None
     """
+    color_player = {PieceColor.BLACK : player1_is_bot,
+                  PieceColor.RED : player2_is_bot}
+
     # Save the starting board state to restart at the end of game.
-    start_board = Checkers(game._size)
+    #start_board = Checkers(game._size)
 
     # The starting player is BLACK
     current = PieceColor.BLACK
@@ -319,8 +339,20 @@ def play_checkers(game: Checkers, player1_is_bot=False, player2_is_bot=False) ->
         print()
 
         # Get move from current player
-        info = select_piece(game, current)
-        do_move(info[0], info[1], game)
+        if not color_player[current]:
+            info = select_piece(game, current)
+        else:
+            info = ['hehe', 'haha']
+        if info == 'draw':
+            # Call checkers draw game
+            game.draw_game()
+            continue
+        print(info)
+        if info == 'resign':
+            print('hihi')
+            game.resign_game(current)
+            continue
+        do_move(info[0], info[1], game, color_player[current])
 
 
         # Update the player
@@ -330,14 +362,15 @@ def play_checkers(game: Checkers, player1_is_bot=False, player2_is_bot=False) ->
             current = PieceColor.BLACK
 
     # Escaped loop, game is over, print final board state
-    print("hi")
     print_board(game)
 
     # Find winner and print winner or tie
     print()
     print()
 
-    if current == PieceColor.BLACK:
+    if game.get_winner() == None:
+        console.print("Draw")
+    elif current == PieceColor.BLACK:
         start_message(PieceColor.RED, game_over=True)
     elif current == PieceColor.RED:
         start_message(PieceColor.BLACK, game_over=True)
@@ -356,5 +389,5 @@ b = Board(3)
 play_checkers(b)
 '''
 
-c = Checkers(3)
+c = Checkers(2)
 play_checkers(c)
