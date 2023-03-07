@@ -1,9 +1,33 @@
 """
-Checkers game logic.
+Class for Checkers: this is the Checkers game logic file.
 
 Current Status : comments, docstring
 
 Author: Daniel Chen
+"""
+
+"""
+Example calls:
+
+    1) Creating a board::
+
+        checkers = Checkers(3)
+
+    2) Getting the valid moves list of Red:
+
+        move_list = checkers.valid_moves(PieceColor.RED)
+    
+    3) executing a single move:
+
+        checkers.execute_single_move(move_list[3], 1)
+    
+    4) drawing the game:
+
+        checkers.draw_game()
+
+    5) resigning the game for Red:
+
+        checkers.resign_game(PieceColor.RED)
 """
 
 
@@ -18,14 +42,34 @@ opposite_color[PieceColor.RED] = PieceColor.BLACK
 opposite_color[PieceColor.BLACK] = PieceColor.RED
 
 class Checkers:
+    #PRIVATE ATTRIBUTES
+
+    #the board itself
     _game_board: object
+
+    #dimensions of the board
     _board_dim: int
+
+    #size of the game - how many rows of pieces
     _size: int
+
+    #winner (if any) of the game
     _winner: Optional[PieceColor]
-    consecutive_non_jump_moves: int
+
+    #whether or not the game has been resigned or drawn
     _resigned: bool
 
+    #PUBLIC ATTRIBUTES
+
+    #how many moves since last piece was taken
+    consecutive_non_jump_moves: int
+
     def __init__(self, size):
+        """
+        Initializes the game board. At first, there is no winner, no
+        consecutive non jump moves, no one has resigned, and the board
+        state is as it is at the start of the game.
+        """
         self._size = size
         self._board_dim = 2*size+2
         self._game_board = Board(self._board_dim, self._board_dim)
@@ -436,10 +480,13 @@ class Checkers:
     
 
 class Board:
+    """
+    Class for representing a board for an abritrary game.
+    """
     board: List[List[Optional[PieceColor]]]
     #_board_dim: int
     #_size: int
-    _winner: Optional[PieceColor]
+    #_winner: Optional[PieceColor]
     _board_width: int
     _board_height: int
 
@@ -449,16 +496,24 @@ class Board:
 
         Args:
             size (int) : no. of rows of pieces
+
+        Returns: None
         """
         #self._size = size
         #self._board_dim = 2*size+2
         self._board_width = width
         self._board_height = height
         self.board = [[None]*self._board_width for _ in range(self._board_height)]
-        self._winner = None
         self._populate()
 
     def _populate(self):
+        """
+        Populates the board with square objects. 
+
+        Args: None
+
+        Returns: None
+        """
         for i in range(self._board_height): #row
             for j in range(self._board_width): #col
                 self.board[i][j] = Square(i,j, None)
@@ -583,13 +638,13 @@ class Moves:
     def can_execute(self):
         return bool(self.children) #shortcut to say  
 """
+Example code to run a simulation random game
+
 board_size = 3
-c = Checkers(board_size, board_size)
+c = Checkers(board_size)
 BLACK = c.get_board().board[0][1].piece.color
 RED = c.get_board().board[2*board_size+1][0].piece.color
-"""
 
-"""
 for i in range(100):
     print("RED MOVE")
     c.make_random_move(RED)
