@@ -58,7 +58,7 @@ class SmartBot:
         color (PieceColor attribute of bot), opponent_color (PieceColor attr. of
         opponent player), and depth (depth of bot). 
 
-        Args:
+        Input:
             checkers: Checkers
             color: PieceColor attribute
             opponent_color: PieceColor attribute
@@ -234,7 +234,17 @@ class SmartBot:
         return non_empty_lst
 
 class RandomBot:
+    """
+    Random bot class -- this bot makes only random moves.  
+    """
     def __init__(self, checkers, color):
+        """ 
+        Constructor
+
+        Input:
+            checkers: Checkers
+            color: PieceColor attribute
+        """
         self._checkers = checkers
         self._color = color
 
@@ -299,8 +309,7 @@ class RandomBot:
 
 class BotPlayer:
     """
-    Simple class to store information about a
-    bot player in a simulation.
+    Simple class to store information about a bot player in a simulation.
     """
     name: str
     bot: Union[RandomBot, SmartBot]
@@ -310,7 +319,7 @@ class BotPlayer:
     def __init__(self, name: str, board: Checkers, color: PieceColor,
                  opponent_color: PieceColor, depth):
         """ Constructor
-        Args:
+        Input:
             name: Name of the bot
             board: Board to play on
             color: Bot's color
@@ -327,7 +336,11 @@ class BotPlayer:
 
 
 def simulate(game: Checkers, n: int, bots, dim: int) -> None:
-    """ Simulates multiple games between two bots
+    """ 
+    Simulates n games between the Bots specified by bots, played on a board of
+    dimension (2 * dim) + 2 x (2 * dim) + 2. Number of wins are updated in the
+    BotPlayer objects within bots.  
+
     Input:
         board: The board on which to play
         n: The number of games to play
@@ -409,34 +422,5 @@ def cmd(num_games, player1, player2, depth1, depth2, board_size):
 if __name__ == "__main__":
     cmd()
 
-"""  
-# Testing Code Below
-bot_wins = 0
-rand_wins = 0
 
-for i in range(1):
-    game = Checkers(3)
-    black = PieceColor.BLACK
-    red = PieceColor.RED
-    smart = SmartBot(game, red, black, 3)
-    rand = RandomBot(game, black)
-    bots = {red: smart, black: rand}
-    curr = smart
-
-    while (not game.is_done(red)) and (not game.is_done(black)):
-        print(game)
-        move, index = curr.suggest_move()
-        game.execute_single_move(move, index)
-
-        if curr == bots[red]:
-            curr = bots[black]
-        else:
-            curr = bots[red]
-    if game.is_done(red):
-        rand_wins += 1
-    else:
-        bot_wins += 1
-    print(game)
-    print(f"bot won {bot_wins} games, random won {rand_wins} games")
-"""
 
