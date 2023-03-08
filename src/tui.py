@@ -176,7 +176,7 @@ def do_move(moves, color, game):
             except:
                 # If we reach here, there was some error with the input.
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
-                num_imput_error += 1
+                #num_imput_error += 1
 
 def print_board(game: Checkers) -> None:
     """ 
@@ -254,7 +254,34 @@ def print_board(game: Checkers) -> None:
         "[bold red]|[/bold red] [bold yellow]<y-coord>[/bold yellow]")
     return None
     
-def start_message(color, game_over=False):
+def human_turn(game: Checkers, curr, non_curr):
+    """
+    Handles the minor logistics of a human's turn. Checks for draws and
+    resignations, also does moves.
+    """
+    info = select_piece(game, curr, non_curr)
+    if info == 'draw':
+        # Call checkers draw game
+        game.draw_game()
+        return None
+    if info == 'resign':
+        game.resign_game(curr)
+        return None
+    do_move(info[0], info[1], game)
+
+def bot_turn(game, bot):
+    """
+    Handles turns for both types of bots.
+
+    Args:
+        game : Checkers, the current game being played.
+        bot : SmartBot|RandomBot, the bot whose turn it is.
+    """
+    move = bot.suggest_move()
+    game.execute_single_move_rand(move[0], move[1])
+    print_board(game)
+
+def print_message(color, game_over=False):
     """
     Produces a start message saying which color goes first.
 
@@ -315,19 +342,17 @@ def play_checkers(game: Checkers, player1: str, player2: str, depth1: int,
             TUIPlayer objects.
     Returns: None
     """
-    color_player = {PieceColor.BLACK : player1,
+    col_pl = {PieceColor.BLACK : player1,
                   PieceColor.RED : player2}
     depths = {player1 : depth1, player2 : depth2}
-
-    # Save the starting board state to restart at the end of game.
-    #start_board = Checkers(game._size)
 
     # The starting player is BLACK
     current = PieceColor.BLACK
     non_current = PieceColor.RED
-    start_message(current)
-    time.sleep(1)
 
+    # Print the starting message
+    print_message(current)
+    time.sleep(1)
     # Print the starting board
     print()
     print_board(game)
@@ -336,26 +361,14 @@ def play_checkers(game: Checkers, player1: str, player2: str, depth1: int,
     # Keep playing until there is a winner:
     while not game.is_done(current):
         # Get move from current player
-        if color_player[current] == "Human":
-            info = select_piece(game, current, color_player[non_current])       
-            if info == 'draw':
-                # Call checkers draw game
-                game.draw_game()
-                continue
-            if info == 'resign':
-                game.resign_game(current)
-                continue
-            do_move(info[0], info[1], game)
-        elif color_player[current] == "Random Bot":
+        if col_pl[current] == "Human":
+            human_turn(game, current, col_pl[non_current])
+        elif col_pl[current] == "Random Bot":
             rbot = RandomBot(game, current)
-            move = rbot.suggest_move()
-            game.execute_single_move_rand(move[0], move[1])
-            print_board(game)
-        elif color_player[current] == "Smart Bot":
-            sbot = SmartBot(game, current, non_current, depths[color_player[current]])
-            move = sbot.suggest_move()
-            game.execute_single_move_rand(move[0], move[1])
-            print_board(game)
+            bot_turn(game, rbot)
+        elif col_pl[current] == "Smart Bot":
+            sbot = SmartBot(game, current, non_current, depths[col_pl[current]])
+            bot_turn(game, sbot)
         else:
             console.print(':pile_of_poo: Everybody Dance! :pile_of_poo:')
 
@@ -370,88 +383,33 @@ def play_checkers(game: Checkers, player1: str, player2: str, depth1: int,
 
     # Escaped loop, game is over, print final board state
     print_board(game)
+    print()
+    print()
 
     # Find winner and print winner or tie
-    print()
-    print()
-
     if game.get_winner() == None:
         console.print("Draw")
-    elif current == PieceColor.BLACK:
-        start_message(PieceColor.RED, game_over=True)
-    elif current == PieceColor.RED:
-        start_message(PieceColor.BLACK, game_over=True)
-    else:
-        console.print(":pile_of_poo:")
+    elif game.get_winner() == PieceColor.BLACK:
+        print_message(PieceColor.BLACK, game_over=True)
+    elif game.get_winner() == PieceColor.RED:
+        print_message(PieceColor.RED, game_over=True)
 
-    # Reset board
+    # Instruct user on how to play again
     print()
     print()
-    console.print("[bold i yellow]Remember to reset the board![/bold i yellow]")
-
-
-def bot_v_bot(game, n, bots, dim):
-    """ 
-    Simulates n games between the Bots specified by bots, played on a board of
-    dimension (2 * dim) + 2 x (2 * dim) + 2. Number of wins are updated in the
-    BotPlayer objects within bots.  
-
-    Input:
-        board: The board on which to play
-        n: The number of games to play
-        bots: Dictionary mapping piece colors to Player objects (the bots that 
-        will play one another)
-        dim: Board is of dimensions (2*(dim) + 2) x (2*(dim) + 2)
-    Returns: None
-    """
-    for i in range(n):
-        game = Checkers(dim)
-        bots[PieceColor.RED].bot._checkers = game
-        bots[PieceColor.BLACK].bot._checkers = game
-        # When reset function implemented code here is more efficient
-        # game.reset() 
-        current = bots[PieceColor.RED]
-        while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
-            # Get corresponding bot's move to play
-            print_board(game)
-            move, index = current.bot.suggest_move()
-            game.execute_single_move_rand(move, index)
-
-            # Alternate turns by switching bots
-            if current.color == PieceColor.BLACK:
-                current = bots[PieceColor.RED]
-            elif current.color == PieceColor.RED:
-                current = bots[PieceColor.BLACK]
-        
-        # Escaped loop, game is over, print final board state
-        print_board(game)
-
-        # Find winner and print winner or tie
-        print()
-        print()
-
-        if game.get_winner() == None:
-            console.print("Draw")
-        elif current == PieceColor.BLACK:
-            start_message(PieceColor.RED, game_over=True)
-        elif current == PieceColor.RED:
-            start_message(PieceColor.BLACK, game_over=True)
-        else:
-            console.print(":pile_of_poo:")
-
-        # Get the winner from the Checkers object
-        winner = game._winner
-        if winner is not None:
-            bots[winner].wins += 1
-
-console = Console()
-
-
+    console.print("[bold i yellow]Reimport to play again![/bold i yellow]")
 
 
 def start_tui():
     """
-    Sets up game.
+    When tui.py is loaded in terminal as main, this function is called to set up
+    the game for the user. First start_tui asks the user for information (what
+    the user wants the player types to be, how big the board should be, etc.),
+    and then once start_tui has all of the information from the player, it makes
+    a new game and initializes the game by calling play_checkers().
+
+    Args: None
+    Returns: None
     """
     console.print("[bold magenta]Welcome![/bold magenta]")
     console.print("Before you can play checkers, you first need to help us " +
@@ -483,24 +441,14 @@ def start_tui():
         if player2 not in player_types:
             console.print("Please enter a valid player type.")
             console.print("Valid entries are [turquoise]'Human'[/turquoise], " +
-                "[turquoise]'Smart Bot'[/turquoise], and [turquoise]'Random Bot' " +
-                "[/turquoise].") 
+                "[turquoise]'Smart Bot'[/turquoise], and [turquoise]'Random " +
+                "Bot'[/turquoise].") 
     
-
     depth2 = None
     if player2 == 'Smart Bot':
         console.print('[yellow i]Reminder: A high depth will make the game ' +
             'incredibly slow! Recoomended depth: 2[/yellow i]')
         depth2 = int(input("Enter the depth for player 2 (smart bot depth) > "))
-
-
-    """ 
-    num_games = 1
-    if (player1 in bots) and (player2 in bots):
-        console.print("Both selected players are bots!")
-        num_games = int(input("How many games would you like to run? >"))
-    """
-
 
     size = 3
     console.print("Now you must select how many rows of pieces each player " +
@@ -508,31 +456,8 @@ def start_tui():
         "pieces, meaning you would enter '3'.")
     size = int(input("How many rows of pieces will each player have? > "))
 
-    """
-    if (player1 in bots) and (player2 in bots):
-        board = Checkers(size)
-        bot1 = BotPlayer(player1, board, PieceColor.RED, PieceColor.BLACK, depth1)
-        bot2 = BotPlayer(player2, board, PieceColor.BLACK, PieceColor.RED, depth2)
-
-        bots = {PieceColor.RED: bot1, PieceColor.BLACK: bot2}
-
-        #bot_minimax.simulate(board, num_games, bots, board_size)
-        bot_v_bot(board, num_games, bots, size)
-
-        bot1_wins = bots[PieceColor.RED].wins
-        bot2_wins = bots[PieceColor.BLACK].wins
-        ties = num_games - (bot1_wins + bot2_wins)
-
-        print(f"Bot 1 ({player1}) wins: {100 * bot1_wins / num_games:.2f}%")
-        print(f"Bot 2 ({player2}) wins: {100 * bot2_wins / num_games:.2f}%")
-        print(f"Ties: {100 * ties / num_games:.2f}%")
-    
-    else:
-    """
     game = Checkers(size)
     play_checkers(game, player1, player2, depth1, depth2)
-
-    
 
 if __name__ == "__main__":
     start_tui()
