@@ -5,6 +5,10 @@ PieceColor = Enum("PieceColor", ["RED", "BLACK"])
 
 
 class Checkers:
+    """
+    Class for representing all the checkers game logic. Uses the Board,
+    Square, Move, and Piece classes.
+    """
     _game_board: object
     _board_dim: int
     _size: int
@@ -250,6 +254,7 @@ class Board:
 class Square:
     """
     Class for the squares on the board.
+    We use this as a graph structure.
     """
     def __init__(self, row, col, piece, highlighted=False) -> None:
         """
@@ -310,7 +315,9 @@ class Square:
 
 class Piece:
     """
-    Class representing individual pieces.
+    Class representing individual pieces. Has some data unique to checkers,
+    such as piece_color being red/black, and is_king being whether the
+    piece is a kinged piece or not.
     """
     is_king: bool
 
@@ -320,7 +327,7 @@ class Piece:
 
         Parameters:
             piece_color : Enum(PieceColor)
-            is_King : boolean
+            is_king : boolean
         """
         self.is_king = is_king
         self.color = piece_color

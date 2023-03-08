@@ -4,9 +4,7 @@ Class for Checkers: this is the Checkers game logic file.
 Current Status : comments, docstring
 
 Author: Daniel Chen
-"""
 
-"""
 Example calls:
 
     1) Creating a board::
@@ -32,7 +30,7 @@ Example calls:
 
 
 from enum import Enum
-from typing import Optional, List, Union
+from typing import Optional, List
 import random
 
 PieceColor = Enum("PieceColor", ["RED", "BLACK"])
@@ -42,6 +40,10 @@ opposite_color[PieceColor.RED] = PieceColor.BLACK
 opposite_color[PieceColor.BLACK] = PieceColor.RED
 
 class Checkers:
+    """
+    Class for representing all the checkers game logic. Uses the Board,
+    Square, Move, and Piece classes.
+    """
     #PRIVATE ATTRIBUTES
 
     #the board itself
@@ -88,6 +90,14 @@ class Checkers:
         """
         return str(self._game_board)
 
+    def get_board_dim(self):
+        """
+        Returns the board dimensions.
+
+        Args: None
+        Returns: Board Dimensions
+        """
+        return self._board_dim
 
     def get_board(self):
         """
@@ -113,9 +123,9 @@ class Checkers:
         if can_jump:
             # print("we should jump")
             return jump_move_list
-        else: #no valid jump moves
-            reg_move_list = self.reg_moves(piece_color)
-            return reg_move_list
+        #else: no valid jump moves
+        reg_move_list = self.reg_moves(piece_color)
+        return reg_move_list
 
     def piece_valid_moves(self, coord, piece_color):
         """
@@ -138,7 +148,7 @@ class Checkers:
             if move.location.row == coord[1] and move.location.col == coord[0]:
                 # Do something with move.children
                 return (coord[1], coord[0], move)
-                possible_moves += move.children
+                #possible_moves += move.children
         for move in possible_moves:
             poss_results.append((move.location.col, move.location.row, move))
         return poss_results
@@ -165,7 +175,6 @@ class Checkers:
                     move, can_jump_this_move = self._jump_moves_piece(square)
                     move_list.append(move)
                     can_jump = can_jump or can_jump_this_move
-        
         return move_list, can_jump
 
     def _jump_moves_piece(self, square):
@@ -186,19 +195,17 @@ class Checkers:
             can_jump = True
         return jump_moves, can_jump
 
-
-
-    
     def _jump_recurse(self, square, piece_color, move, first_piece, first_square):
         """
         Private method
 
         Args: 
             square : Square (square currently on)
-            piece_color : Enum(PieceColor) (to remember which color we can jump over)
+            piece_color : Enum(PieceColor) (know which color we can jump over)
             move : Move (we build off this tree)
-            first_piece : Piece (actually not sure why we need this)
-            first_square : Square (we could revisit this square, so we need to treat as if it's empty)
+            first_piece : Piece (know which directions are valid directions)
+            first_square : Square (we could revisit this square,
+                                   so we need to treat as if it's empty)
 
         Returns:
             None
@@ -213,23 +220,24 @@ class Checkers:
         for dir in first_piece.move_directions():
             if square.neighbors[dir] is not None: #neighbor exists
                 if square.neighbors[dir].has_piece(): #neighbor has piece
-                    if square.neighbors[dir].piece.color.value == opposite.value: #neighbor piece is opposite color
+                    if square.neighbors[dir].piece.color == opposite:
+                        #neighbor piece is opposite color
                         if square.neighbors[dir] not in move.dead_squares:
                             #we haven't visited this square
-                            if square.neighbors[dir].neighbors[dir] is not None: #two neighbors down exists
-                                if square.neighbors[dir].neighbors[dir].is_empty() or square.neighbors[dir].neighbors[dir] == first_square: #two neighbors down is empty
-                                    #if our targeted jump square is empty or is the original square
-                                    #we only need to keep track of the 1st square - if we jump to
-                                    #a square we've visited in the past that isn't the 1st square
-                                    #it must already be empty
-                                    #parity ensures that if we kill a piece
-                                    #we cannot return to it
+                            if square.neighbors[dir].neighbors[dir] is not None:
+                                #two neighbors down exists
+                                if square.neighbors[dir].neighbors[dir].is_empty() or square.neighbors[dir].neighbors[dir] == first_square:
+                                    #two neighbors down is empty
+                                    #we only need to keep track of 1st square,
+                                    #since if we jump to a square we've visited
+                                    #in the past that isn't the 1st square
+                                    #it must already be empty.
+                                    #parity ensures that if we kill a piece,
+                                    #we cannot return to it.
                                     last_index = len(move.children)
                                     move.add_move(square.neighbors[dir].neighbors[dir], square.neighbors[dir])
                                     #print(move)
                                     self._jump_recurse(square.neighbors[dir].neighbors[dir], piece_color, move.children[last_index], first_piece, first_square)
-
-
 
     def reg_moves(self, piece_color):
         """
@@ -246,7 +254,7 @@ class Checkers:
             for square in row:
                 if square.has_color(piece_color):
                     move_list.append(self._reg_moves_piece(square))
-        
+
         return move_list
 
 
@@ -260,15 +268,10 @@ class Checkers:
         """
         moves = Moves(square, set())
         for dir in square.piece.move_directions():
-            '''
-            if not square.neighbors[dir].has_piece:
-                print(dir)
-                moves.add_move(square.neighbors[dir], None)
-            '''
-            if square.neighbors[dir] is not None: #check to see if adjacent exists
-                if square.neighbors[dir].is_empty(): #if the neighboring square is empty
+            if square.neighbors[dir] is not None: #check if adjacent exists
+                if square.neighbors[dir].is_empty():#if neighboring square empty
                     moves.add_move(square.neighbors[dir], None)
-        
+
         return moves
 
     def execute_move(self, move):
@@ -297,8 +300,7 @@ class Checkers:
                     self.consecutive_non_jump_moves = 0
             else:
                 self.consecutive_non_jump_moves += 1
-                    #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
-            
+
             #check if we are kinging
             if cur_move.location.row == 0:
                 if moving_piece.color.value == PieceColor.RED.value:
@@ -308,7 +310,7 @@ class Checkers:
                     moving_piece.is_king = True
         else:
             pass
-    
+
     def make_random_move(self, piece_color):
         """
         Makes a random valid move given a piece's color.
@@ -323,13 +325,9 @@ class Checkers:
         random.shuffle(move_list)
         if len(move_list) == 0:
             return None
-            #print("WIN")
-            #exit()
         i = 0
         while not move_list[i].can_execute():
             i += 1
-        #for move in move_list:
-            #print(move)
         self.execute_move(move_list[i])
 
     def execute_single_move(self, move, child):
@@ -354,14 +352,14 @@ class Checkers:
                 #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
         else:
             self.consecutive_non_jump_moves += 1
-        
+
         if move.children[child].location.row == 0:
             if moving_piece.color.value == PieceColor.RED.value:
                 moving_piece.is_king = True
         if move.children[child].location.row == self._board_dim -1:
             if moving_piece.color.value == PieceColor.BLACK.value:
                 moving_piece.is_king = True
-    
+
     def execute_single_move_rand(self, move, child):
         """
         Executes a single move given a move and a child index specifying
@@ -382,12 +380,13 @@ class Checkers:
             for dead_square in move.children[child].dead_squares:
                 dead_square.piece = None
                 self.consecutive_non_jump_moves = 0
-                #print("killed: " + "[" + str(dead_square.row) + "," + str(dead_square.col) + "]")
         else:
             self.consecutive_non_jump_moves += 1
+
         if move.children[child].can_execute():
             self.execute_move(move.children[child])
-        
+
+        #if we are at the end of the board we king
         if move.children[child].location.row == 0:
             if moving_piece.color.value == PieceColor.RED.value:
                 moving_piece.is_king = True
@@ -418,7 +417,7 @@ class Checkers:
         #no executeable moves for piece_color
         self._winner = opposite_color[piece_color]
         return True
-    
+
     def resign_game(self, piece_color):
         """
         The player of piece_color resigns the game. The other
@@ -470,12 +469,12 @@ class Checkers:
                         self.get_board().board[i][j].piece = Piece(PieceColor.RED)
                     else:
                         self.get_board().board[i][j].piece = None
-                    
+
         #2nd loop - connections
         dirs = {"NW" : (-1, -1),          "NE" : (-1, +1),
 
                 "SW" : (+1, -1),          "SE" : (+1, +1)}
- 
+
         for row in self.get_board().board:
             for square in row:
                 if (square.row + square.col) % 2 == 1:
@@ -487,7 +486,6 @@ class Checkers:
                         target_col = cur_col+dc
                         if 0 <= target_row < self._board_dim and 0 <= target_col < self._board_dim:
                             square.neighbors[dir] = self.get_board().board[target_row][target_col]
-    
 
 class Board:
     """
@@ -527,7 +525,6 @@ class Board:
         for i in range(self._board_height): #row
             for j in range(self._board_width): #col
                 self.board[i][j] = Square(i,j, None)
-            
 
     def __str__(self) -> str:
         """
@@ -542,17 +539,15 @@ class Board:
                 s += str(square)
             s += "\n"
         return s
-    
-        
-
 
 class Square:
     """
     Class for the squares on the board.
     """
-    def __init__(self, row, col, piece, highlighted=False) -> None:
+    def __init__(self, row, col, piece) -> None:
         """
-        Constructor
+        Constructor. Initializes a square, which does not connect to any
+        neighbors, and exists at a location with a piece on it. 
         
         Args:
             row (int) : row value of the square
@@ -564,28 +559,52 @@ class Square:
         self.row = row
         self.col = col
         self.neighbors = {'NW' : None, 'NE' : None, 'SE' : None, 'SW' : None}
-        self.hl = highlighted
 
     def __str__(self) -> str:
-        """ Returns a string representation of what is on the square."""
-        if self.hl:
-            return "hl"
+        """ 
+        Returns a string representation of what is on the square.
+        Returns different things depending on if there is no piece, 
+        a red piece, a black piece, or a king piece, or some combination.
+
+        Args: None
+
+        Returns: str
+        """
         if self.piece == None:
             return "□"
         if self.piece.is_king:
             return self.piece.color.name[0]
         return self.piece.color.name[0].lower()
-    
+
     def has_piece(self):
-        """ Checks if piece exists on the square."""
+        """ 
+        Checks if piece exists on the square. 
+        Returns true the square has a piece.
+        
+        Args: None
+        
+        Returns: bool
+        """
         return self.piece is not None
-    
+
     def is_empty(self):
-        """ Returns true if there is no piece. """
+        """ 
+        Returns true if there is no piece. 
+        
+        Args: None
+
+        Returns: bool 
+        """
         return self.piece is None
-    
+
     def has_color(self, piece_color):
-        """ Checks if the piece is of the color we want. """
+        """ 
+        Checks if the piece is of the color we want. 
+        
+        Args: piece_color (what piece color we want to look for)
+        
+        Returns: bool (True if the piece's color and piece_color agrees.)
+        """
         if self.has_piece():
             return piece_color == self.piece.color
         return False
@@ -598,15 +617,26 @@ class Piece:
     is_king: bool
     def __init__(self, piece_color, is_king=False):
         """
+        Initializes the piece.
+
         Parameters:
             piece_color : Enum(PieceColor)
-            is_King : boolean
+            is_king : boolean
         """
         self.is_king = is_king
         self.color = piece_color
 
     def move_directions(self):
-        """ Returns a list of the possible directions a piece could move."""
+        """ 
+        Returns a list of the possible directions a piece could move.
+        If it is a king, it is all four. If it is red, and not king, we can 
+        move "up" the board. If it is black, and not king, we can move 
+        "down" the board.
+        
+        Args: None
+        
+        Returns: list[str]
+        """
         if self.is_king:
             return ["NW", "NE", "SE", "SW"]
         if self.color.value == PieceColor.BLACK.value:
@@ -615,18 +645,28 @@ class Piece:
 
 
 class Moves:
+    """
+    Class representing possible moves a piece could take using a tree
+    structure.
+    """
     def __init__(self, square, dead) -> None:
         """
+        Initializes the move tree. We want a square that is the head of the move
+        tree, and has no children, and the move jumps over no pieces, so 
+        there are no dead squares.
+
         Args:
             square : Square (current location)
             dead : set[Square] (list of dead squares)
-            """
+        """
         self.location = square
         self.dead_squares = dead
         self.children = [] #set of moves
-    
+
     def add_move(self, square, new_dead):
         """
+        Adds a move to the move tree.
+
         Args:
             square : Square (current location)
             new_dead = Square (just jumped over)
@@ -637,16 +677,27 @@ class Moves:
             new_dead_set = self.dead_squares.copy()
             new_dead_set.add(new_dead)
             self.children.append(Moves(square, new_dead_set))
-    
+
     def __str__(self):
-        """ Returns string representation, DFS-like. """
+        """ 
+        Returns string representation of the movetree, DFS-like. 
+
+        Args: None
+
+        Returns: str
+        """
         s = "[" + str(self.location.row) + "," + str(self.location.col)+ "]"
         for move in self.children:
             s += str(move)
         return s
-    
+
     def can_execute(self):
-        return bool(self.children) #shortcut to say  
+        """
+        Returns true if it has children, false if not. That is, returns true
+        if the move has a continuation.
+        """
+        return bool(self.children)
+
 """
 Example code to run a simulation random game
 
