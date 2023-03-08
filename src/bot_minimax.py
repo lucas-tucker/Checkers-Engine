@@ -83,14 +83,33 @@ class SmartBot:
         # Use get_trees to get list of trees corresponding to possible moves
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
         best = -math.inf
-        best_mv = None
+        # Create dictionary for random selection of highest minmax-valued moves
+        best_moves = {}
         for tree in tree_list:
             cur = self.get_minmax(tree, opp=True)
             # Find tree with best minmax value
             if cur >= best:
+                if not(tree.move in best_moves):
+                    best_moves[tree.move] = []
                 best = cur
-                best_mv = [tree.move, tree.index]
-        return best_mv
+                best_moves[tree.move].append(tree.index)
+        return self.find_rand(best_moves)
+    
+    def find_rand(self, move_dict):
+        """ 
+        Given a dictionary which maps Moves to lists of child indices, this
+        method returns a random Move-index tuple corresponding to one move on
+        the board. 
+
+        Input:
+            move_dict: dict{Moves: list[int]}
+        
+        Returns:
+            (Moves, int)
+        """
+        rand_mv = random.choice(list(move_dict.items()))[0]
+        rand_child = random.choice(move_dict[rand_mv])
+        return [rand_mv, rand_child]
    
     def get_minmax(self, tree, opp):
         """
@@ -357,6 +376,7 @@ def simulate(game: Checkers, n: int, bots, dim: int) -> None:
         # game.reset() 
         current = bots[PieceColor.RED]
         while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
+            print(game)
             # Get corresponding bot's move to play
             move, index = current.bot.suggest_move()
             game.execute_single_move_rand(move, index)
