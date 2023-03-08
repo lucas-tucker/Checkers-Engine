@@ -83,14 +83,33 @@ class SmartBot:
         # Use get_trees to get list of trees corresponding to possible moves
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
         best = -math.inf
-        best_mv = None
+        # Create dictionary for random selection of highest minmax-valued moves
+        best_moves = {}
         for tree in tree_list:
             cur = self.get_minmax(tree, opp=True)
             # Find tree with best minmax value
             if cur >= best:
+                if not(tree.move in best_moves):
+                    best_moves[tree.move] = []
                 best = cur
-                best_mv = [tree.move, tree.index]
-        return best_mv
+                best_moves[tree.move].append(tree.index)
+        return self.find_rand(best_moves)
+    
+    def find_rand(self, move_dict):
+        """ 
+        Given a dictionary which maps Moves to lists of child indices, this
+        method returns a random Move-index tuple corresponding to one move on
+        the board. 
+
+        Input:
+            move_dict: dict{Moves: list[int]}
+        
+        Returns:
+            (Moves, int)
+        """
+        rand_mv = random.choice(list(move_dict.items()))[0]
+        rand_child = random.choice(move_dict[rand_mv])
+        return [rand_mv, rand_child]
    
     def get_minmax(self, tree, opp):
         """
@@ -121,7 +140,7 @@ class SmartBot:
 
     def assess_state(self, board):
         """
-        Given a board and a color, this method returns an assessment (int) of 
+        Given a board, this method returns an assessment (int) of 
         the board from the standpoint of king and piece counts. 
 
         Input: board (Checkers)
@@ -177,8 +196,8 @@ class SmartBot:
     
     def simulate_move(self, board, mv, ind, color):
         """
-        Given a board, move and index, this method returns a new board state
-        (a Checkers object) corresponding to if that move-index were to be 
+        Given a board, move, index, and color, this method returns a new board
+        state (a Checkers object) corresponding to if that move-index were to be 
         played.
 
         Input: board (Checkers); mv (Moves); ind (int); color (PieceColor attr.)
@@ -335,11 +354,10 @@ class BotPlayer:
         self.wins = 0
 
 
-def simulate(game: Checkers, n: int, bots, dim: int) -> None:
+def simulate(game: Checkers, n: int, bots) -> None:
     """ 
-    Simulates n games between the Bots specified by bots, played on a board of
-    dimension (2 * dim) + 2 x (2 * dim) + 2. Number of wins are updated in the
-    BotPlayer objects within bots.  
+    Simulates n games between the Bots specified by bots. Number of wins are 
+    updated in the BotPlayer objects within bots.  
 
     Input:
         board: The board on which to play
@@ -350,11 +368,7 @@ def simulate(game: Checkers, n: int, bots, dim: int) -> None:
     Returns: None
     """
     for i in range(n):
-        game = Checkers(dim)
-        bots[PieceColor.RED].bot._checkers = game
-        bots[PieceColor.BLACK].bot._checkers = game
-        # When reset function implemented code here is more efficient
-        # game.reset() 
+        game._populate()
         current = bots[PieceColor.RED]
         while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
             # Get corresponding bot's move to play
@@ -408,7 +422,7 @@ def cmd(num_games, player1, player2, depth1, depth2, board_size):
 
     bots = {PieceColor.RED: bot1, PieceColor.BLACK: bot2}
 
-    simulate(board, num_games, bots, board_size)
+    simulate(board, num_games, bots)
 
     bot1_wins = bots[PieceColor.RED].wins
     bot2_wins = bots[PieceColor.BLACK].wins

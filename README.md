@@ -52,4 +52,4 @@ To play two bots against each other, run
 
 You will be prompted with instructions on how to play the two bots against one
 another (random, smart, depth, number of games) and you will recieve the 
-game outcomes as percentage scores.
+game outcomes as percentages.
