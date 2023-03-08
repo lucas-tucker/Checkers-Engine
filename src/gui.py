@@ -6,11 +6,13 @@ Author: Althea Li
 
 import pygame
 from pygame.locals import *
+from pygame import mixer
 import click
 import sys
+import time
 
 from checkers import Board, Square, Piece, Moves, PieceColor, Checkers
-
+from bot_minimax import SmartBot, RandomBot, BotPlayer, Move_Tree
 from enum import Enum
 
 import os
@@ -20,10 +22,14 @@ try:
     os.environ["DISPLAY"]
 except: 
     os.environ["SDL_VIDEODRIVER"] = 'windib'
-os.environ['SDL_AUDIODRIVER'] = 'dsp'
+
 os.environ["SDL_VIDEO_CENTERED"] = '1'
 
 pygame.init()
+mixer.init()
+mixer.music.load("checkers_audio.mp3")
+mixer.music.set_volume(0.5)
+mixer.music.play()
 
 Board_width = 3 # or range from 6 to 20
 Empty_Grid = "Empty_Grid"
@@ -39,8 +45,6 @@ Background = Gray
 
 WIDTH = 600
 HEIGHT = 600
-
-crown = pygame.transform.scale(pygame.image.load('crown.png'),(44, 25))
 
 def draw_board(surface: pygame.surface.Surface, game, move=None):
     """
@@ -90,7 +94,6 @@ def draw_board(surface: pygame.surface.Surface, game, move=None):
             if is_king:
                 king_radius = radius - (rh//6)
                 pygame.draw.circle(surface, color=king_color, center=center, radius=king_radius)
-                # surface.blit(crown, center[0], center[1])
 
     border_size = int(rh // 12)
     if move is not None:
@@ -104,7 +107,7 @@ def draw_board(surface: pygame.surface.Surface, game, move=None):
             rect = (col * cw, row * rh, cw, rh)
             pygame.draw.rect(surface, color=(148, 214, 81), rect=rect, width=border_size)
 
-def play_checkers(game):
+def play_checkers(game: Checkers, player1: str, player2: str):
     """
     Plays a game of checkers on a Pygame window
 
@@ -136,14 +139,33 @@ def play_checkers(game):
     locked_in = False
 
     is_done= game.is_done(current)
-    
+
+    color_player = {PieceColor.BLACK : player1,
+                  PieceColor.RED : player2}
+    depth = 2
     while True:
+        human_move = False
+        if color_player[current]  == "Smart":
+            sbot = SmartBot(game, current, opposite_color[current], depth)
+            move = sbot.suggest_move()
+            game.execute_single_move_rand(move[0], move[1])
+            current = opposite_color[current]
+            time.sleep(0.5)
+        elif color_player[current] == "Random":
+            rbot = RandomBot(game, current)
+            move = rbot.suggest_move()
+            game.execute_single_move_rand(move[0], move[1])
+            current = opposite_color[current]
+            time.sleep(0.5)
+        else:
+            human_move = True
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.MOUSEBUTTONUP and human_move:
                 pos_x, pos_y = pygame.mouse.get_pos() #row is y, col is x
                 pos_x -= 5
                 pos_y -= 5
@@ -180,6 +202,7 @@ def play_checkers(game):
                     if square.piece.color == current:
                         piece_valid_move = game.piece_valid_moves((select_col, select_row), current)
                         current_move = piece_valid_move[2]
+            """
             if event.type == pygame.KEYDOWN and locked_in == False:
                 if 'r' == event.unicode:
                     game.make_random_move(current)
@@ -190,6 +213,7 @@ def play_checkers(game):
                     game.make_random_move(current)
                     current = opposite_color[current]
                     current_move = None
+            """
 
         draw_board(surface, game, current_move)
         pygame.display.update()
@@ -197,6 +221,9 @@ def play_checkers(game):
         is_done = game.is_done(current)
         if is_done:
             winner = opposite_color[current].name
+
+            if winner == "BLACK":
+                winner = "BLUE"
             
             font = pygame.font.Font('freesansbold.ttf', 32)
             text = font.render(winner + " WINS!", True, White, Black)
@@ -220,10 +247,12 @@ play_checkers(c)
 
 @click.command(name = "checkers-gui")
 @click.option('--size', default = 3)
-def cmd(size):
+@click.option('--player1', default = "Human")
+@click.option('--player2', default = "Human")
+def cmd(size, player1, player2):
     board_size = size
     c = Checkers(board_size)
-    play_checkers(c)
+    play_checkers(c, player1, player2)
 
 if __name__ == '__main__':
     cmd()
