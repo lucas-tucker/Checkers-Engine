@@ -90,6 +90,14 @@ class Checkers:
         """
         return str(self._game_board)
 
+    def get_board_dim(self):
+        """
+        Returns the board dimensions.
+
+        Args: None
+        Returns: Board Dimensions
+        """
+        return self._board_dim
 
     def get_board(self):
         """
