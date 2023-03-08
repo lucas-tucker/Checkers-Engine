@@ -39,21 +39,22 @@ class ExitError(Exception):
     """
     pass
 
-def select_piece(game, color):
+def select_piece(game, color, opp_type):
     """
     At the start of a players move they must select a piece to then move.
 
     Returns : list [possible moves for selected piece, piece color]
     """
     if True:
-        num_input_error = 0
+        num_input_error = 0 # If the user makes too many mistakes we give hints
         while True:
             if num_input_error >= 5:
                 # If a player gives a wrong input 5 times, we give them a way
                 # to exit from the game.
-                console.print("[bold yellow]Hint:[/bold yellow] If stuck," 
-                    " typing [magenta]<exit>[/magenta] will exit you from the game.")
-            col = ""
+                console.print("[bold yellow]Hint:[/bold yellow] If stuck," +
+                    " typing [magenta]<exit>[/magenta] will exit you from " +
+                    "the game.")
+            #col = ""
             if color.name == "BLACK":
                 col = "Blue"
             else:
@@ -65,7 +66,7 @@ def select_piece(game, color):
                     raise ExitError
                 if v == "draw":
                     # If a player types draw, prompt a draw acceptance.
-                    if player_2_is_bot:
+                    if (opp_type == 'Smart Bot') or (opp_type == 'Random Bot'):
                         return 'draw'
                     else:
                         console.print("Type [lime]'yes'[/lime] to accept, [red]'no'[/red] to refuse")
@@ -112,7 +113,7 @@ def select_piece(game, color):
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
                 num_input_error += 1
     
-def do_move(moves, color, game, is_bot=False):
+def do_move(moves, color, game):
     """
     Gets a move from the current player.
     
@@ -121,6 +122,8 @@ def do_move(moves, color, game, is_bot=False):
 
     Args: 
         moves: possible moves for our selected piece
+        color: color of the moving player
+        game: game being played
 
     Returns: None
     """
@@ -144,11 +147,10 @@ def do_move(moves, color, game, is_bot=False):
                 col = "Red"
             v = input(f"{col}'s Turn> ")            
 
+            if v == "exit":
+                # If the input was "exit", we raise an ExitError
+                raise ExitError
             try:
-                if v == "exit":
-                    # If input was "exit", raise ExitError
-                    raise ExitError
-
                 out = v.split('|')
                 col = ALP_INT[out[0]]
                 row = int(out[1])
@@ -163,28 +165,18 @@ def do_move(moves, color, game, is_bot=False):
 
                         # Now we change moves to the subtree.
                         nxt = moves[2].children[move_index]
-
                         moves = (nxt.location.col, nxt.location.row, nxt)
-                        print_board(game)
                         valid = True
+                        print_board(game)
                         continue
                     move_index += 1
                 if not valid:
-                    console.print("[bold red]ERROR:[/bold red] Did not "
+                    console.print("[bold red]ERROR:[/bold red] Did not " +
                         "enter a valid move. Please try again.")
             except:
-                if v == "exit":
-                    # If input was "exit", raise ExitError
-                    raise ExitError
                 # If we reach here, there was some error with the input.
                 console.print("[bold red]ERROR:[/bold red] Please try again.")
                 num_imput_error += 1
-
-def bot_do_move():
-    """
-    hahaha this is for the random bot
-    """
-
 
 def print_board(game: Checkers) -> None:
     """ 
@@ -195,7 +187,7 @@ def print_board(game: Checkers) -> None:
     color and spacing to make the board more comprehensible.
 
     Args:
-        board: The board to print
+        game: The game to print
     Returns: None
     """
     size = game._board_dim  - 1
@@ -314,7 +306,8 @@ def start_message(color, game_over=False):
     console.print(top + rw2 + rw3 + rw4 + rw5 + rw6 + btm)
     
 
-def play_checkers(game: Checkers, player1: str, player2: str, depth1: int, depth2: int) -> None:
+def play_checkers(game: Checkers, player1: str, player2: str, depth1: int, 
+    depth2: int) -> None:
     """ Plays a game of Connect Four on the terminal
     Args:
         board: The board to play on
@@ -335,16 +328,16 @@ def play_checkers(game: Checkers, player1: str, player2: str, depth1: int, depth
     start_message(current)
     time.sleep(1)
 
+    # Print the starting board
+    print()
+    print_board(game)
+    print()
+    
     # Keep playing until there is a winner:
     while not game.is_done(current):
-        # Print the board
-        print()
-        print_board(game)
-        print()
-
         # Get move from current player
         if color_player[current] == "Human":
-            info = select_piece(game, current)       
+            info = select_piece(game, current, color_player[non_current])       
             if info == 'draw':
                 # Call checkers draw game
                 game.draw_game()
@@ -352,15 +345,17 @@ def play_checkers(game: Checkers, player1: str, player2: str, depth1: int, depth
             if info == 'resign':
                 game.resign_game(current)
                 continue
-            do_move(info[0], info[1], game, color_player[current])
+            do_move(info[0], info[1], game)
         elif color_player[current] == "Random Bot":
             rbot = RandomBot(game, current)
             move = rbot.suggest_move()
             game.execute_single_move_rand(move[0], move[1])
+            print_board(game)
         elif color_player[current] == "Smart Bot":
             sbot = SmartBot(game, current, non_current, depths[color_player[current]])
             move = sbot.suggest_move()
             game.execute_single_move_rand(move[0], move[1])
+            print_board(game)
         else:
             console.print(':pile_of_poo: Everybody Dance! :pile_of_poo:')
 
