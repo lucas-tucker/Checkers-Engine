@@ -80,7 +80,7 @@ class SmartBot:
         # Get possible moves for this color
         depth = self._depth
         possible_mvs = self.non_empties(self._checkers.valid_moves(self._color))
-        # Use get_trees to get list of trees corresponding to possible moves
+        # Use get_trees to get list of trees corresponding to move continuations
         tree_list = self.get_trees(possible_mvs, self._color, depth, self._checkers)
         best = -math.inf
         # Create dictionary for random selection of highest minmax-valued moves
@@ -98,14 +98,14 @@ class SmartBot:
     def find_rand(self, move_dict):
         """ 
         Given a dictionary which maps Moves to lists of child indices, this
-        method returns a random Move-index tuple corresponding to one move on
+        method returns a random Move-index list corresponding to one move on
         the board. 
 
         Input:
             move_dict: dict{Moves: list[int]}
         
         Returns:
-            (Moves, int)
+            list[Moves, int]
         """
         rand_mv = random.choice(list(move_dict.items()))[0]
         rand_child = random.choice(move_dict[rand_mv])
@@ -286,14 +286,14 @@ class RandomBot:
     def find_rand(self, move_dict):
         """ 
         Given a dictionary which maps Moves to lists of child indices, this
-        method returns a random Move-index tuple corresponding to one move on
+        method returns a random Move-index list corresponding to one move on
         the board. 
 
         Input:
             move_dict: dict{Moves: list[int]}
         
         Returns:
-            (Moves, int)
+            list[Moves, int]
         """
         rand_mv = random.choice(list(move_dict.items()))[0]
         rand_child = random.choice(move_dict[rand_mv])
@@ -400,7 +400,6 @@ def simulate(game: Checkers, n: int, bots) -> None:
 @click.option('--board_size', type=click.INT, default=3)
 
 def cmd(num_games, player1, player2, depth1, depth2, board_size):
-    # Remove this code if TUI/GUI work
     print("")
     print("Hello. In this mode only bots can be played against one another.")
     print("Note that you will be prompted for the depths of both bots,")
