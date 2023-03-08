@@ -140,7 +140,7 @@ class SmartBot:
 
     def assess_state(self, board):
         """
-        Given a board and a color, this method returns an assessment (int) of 
+        Given a board, this method returns an assessment (int) of 
         the board from the standpoint of king and piece counts. 
 
         Input: board (Checkers)
@@ -196,8 +196,8 @@ class SmartBot:
     
     def simulate_move(self, board, mv, ind, color):
         """
-        Given a board, move and index, this method returns a new board state
-        (a Checkers object) corresponding to if that move-index were to be 
+        Given a board, move, index, and color, this method returns a new board
+        state (a Checkers object) corresponding to if that move-index were to be 
         played.
 
         Input: board (Checkers); mv (Moves); ind (int); color (PieceColor attr.)
@@ -354,11 +354,10 @@ class BotPlayer:
         self.wins = 0
 
 
-def simulate(game: Checkers, n: int, bots, dim: int) -> None:
+def simulate(game: Checkers, n: int, bots) -> None:
     """ 
-    Simulates n games between the Bots specified by bots, played on a board of
-    dimension (2 * dim) + 2 x (2 * dim) + 2. Number of wins are updated in the
-    BotPlayer objects within bots.  
+    Simulates n games between the Bots specified by bots. Number of wins are 
+    updated in the BotPlayer objects within bots.  
 
     Input:
         board: The board on which to play
@@ -369,14 +368,9 @@ def simulate(game: Checkers, n: int, bots, dim: int) -> None:
     Returns: None
     """
     for i in range(n):
-        game = Checkers(dim)
-        bots[PieceColor.RED].bot._checkers = game
-        bots[PieceColor.BLACK].bot._checkers = game
-        # When reset function implemented code here is more efficient
-        # game.reset() 
+        game._populate()
         current = bots[PieceColor.RED]
         while (not game.is_done(PieceColor.RED)) and (not game.is_done(PieceColor.BLACK)):
-            print(game)
             # Get corresponding bot's move to play
             move, index = current.bot.suggest_move()
             game.execute_single_move_rand(move, index)
@@ -428,7 +422,7 @@ def cmd(num_games, player1, player2, depth1, depth2, board_size):
 
     bots = {PieceColor.RED: bot1, PieceColor.BLACK: bot2}
 
-    simulate(board, num_games, bots, board_size)
+    simulate(board, num_games, bots)
 
     bot1_wins = bots[PieceColor.RED].wins
     bot2_wins = bots[PieceColor.BLACK].wins
