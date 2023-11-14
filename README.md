@@ -1,5 +1,5 @@
 # project-nmatheos-ayl-lwtucker-dchn
-Authors: Lucas, Daniel, Althea, Niko
+Authors: Lucas (Engine), Daniel (Board Logic), Althea (GUI), Niko (TUI)
 
 This respository contains a design and implementation for big checkers 
 (a general implementation of [Checkers](https://en.wikipedia.org/wiki/Checkers)).
